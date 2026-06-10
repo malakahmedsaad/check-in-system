@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  mentor
+}
+
+enum MentorType {
+  CONSULTATION
+  LAB
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String
+  role       Role
+  mentorType MentorType?
+  createdAt  DateTime  @default(now())
+
+  timeslots         Timeslot[]
+  bookingsAsStudent Booking[]  @relation("StudentBookings")
+  bookingsAsMentor  Booking[]  @relation("MentorBookings")
+}
+
+model Timeslot {
+  id        String   @id @default(cuid())
+  mentorId  String
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+
+  mentor   User      @relation(fields: [mentorId], references: [id])
+  bookings Booking[]
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  studentId  String
+  mentorId   String
+  timeslotId String
+  startDate  DateTime
+  endDate    DateTime
+  status     BookingStatus
+  createdAt  DateTime      @default(now())
+
+  student  User     @relation("StudentBookings", fields: [studentId], references: [id])
+  mentor   User     @relation("MentorBookings", fields: [mentorId], references: [id])
+  timeslot Timeslot @relation(fields: [timeslotId], references: [id])
+  checkin  Checkin?
+}
+
+model Checkin {
+  id          String   @id @default(cuid())
+  bookingId   String   @unique
+  checkedInAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
