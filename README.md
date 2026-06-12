@@ -57,3 +57,5 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 used commands:
 
+npx prisma studio
+
