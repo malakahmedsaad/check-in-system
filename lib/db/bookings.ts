@@ -4,7 +4,13 @@ import { prisma } from "../prisma";
 
 export type BookingWithStudentSummary = Prisma.BookingGetPayload<{
   include: {
-    timeslot: true;
+    timeslot: {
+      select: {
+        date: true;
+        startTime: true;
+        endTime: true;
+      };
+    };
     mentor: {
       select: {
         name: true;
@@ -12,6 +18,7 @@ export type BookingWithStudentSummary = Prisma.BookingGetPayload<{
         mentorType: true;
       };
     };
+    checkin: true;
   };
 }>;
 
@@ -30,9 +37,18 @@ export async function getBookingsByStudentId(
   studentId: string,
 ): Promise<BookingWithStudentSummary[]> {
   return prisma.booking.findMany({
-    where: { studentId },
+    where: {
+      studentId,
+      status: "CONFIRMED",
+    },
     include: {
-      timeslot: true,
+      timeslot: {
+        select: {
+          date: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
       mentor: {
         select: {
           name: true,
@@ -40,9 +56,12 @@ export async function getBookingsByStudentId(
           mentorType: true,
         },
       },
+      checkin: true,
     },
     orderBy: {
-      startDate: "asc",
+      timeslot: {
+        date: "asc",
+      },
     },
   });
 }
