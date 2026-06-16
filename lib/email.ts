@@ -39,10 +39,17 @@ Please head to the meeting room when ready.
 Note: this test notification was sent to ${checkinNotificationRecipient} instead of ${params.mentorEmail}.
   `.trim();
 
-  await resend.emails.send({
+  const response = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL!,
     to: checkinNotificationRecipient,
     subject,
     text,
   });
+
+  if (response.error) {
+    console.error("Email failed:", response.error);
+    return;
+  }
+
+  console.log("Check-in email sent:", response.data.id);
 }
