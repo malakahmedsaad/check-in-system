@@ -4,6 +4,7 @@ import {
   checkInToBooking,
   getBookingById,
 } from "../../../../../../lib/db/bookings";
+import { sendCheckinNotification } from "../../../../../../lib/email";
 import { getSession } from "../../../../../../lib/get-session";
 
 type RouteContext = {
@@ -11,6 +12,25 @@ type RouteContext = {
     id: string;
   }>;
 };
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+});
+
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
 export async function POST(_request: Request, context: RouteContext) {
   try {
@@ -46,6 +66,21 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     const checkin = await checkInToBooking(id);
+
+    try {
+      await sendCheckinNotification({
+        mentorEmail: booking.mentor.email,
+        mentorName: booking.mentor.name,
+        studentName: booking.student.name,
+        mentorType: booking.mentor.mentorType ?? "CONSULTATION",
+        bookingDate: dateFormatter.format(booking.timeslot.date),
+        startTime: timeFormatter.format(booking.timeslot.startTime),
+        endTime: timeFormatter.format(booking.timeslot.endTime),
+        checkedInAt: dateTimeFormatter.format(checkin.checkedInAt),
+      });
+    } catch (error) {
+      console.error("Email failed:", error);
+    }
 
     return NextResponse.json(checkin, { status: 201 });
   } catch (error) {
