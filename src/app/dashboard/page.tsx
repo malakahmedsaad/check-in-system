@@ -46,21 +46,32 @@ function formatMentorType(mentorType: MentorType) {
   return "Consultation";
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 function SkeletonCards() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {[0, 1, 2].map((item) => (
         <div
           key={item}
-          className="animate-pulse rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+          className="animate-pulse rounded-xl border border-slate-200 bg-white p-5"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="w-full max-w-sm space-y-3">
-              <div className="h-5 w-2/3 rounded bg-gray-200" />
-              <div className="h-4 w-1/2 rounded bg-gray-200" />
-              <div className="h-4 w-3/5 rounded bg-gray-200" />
+          <div className="flex items-center gap-4">
+            <div className="h-11 w-11 rounded-full bg-slate-200" />
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="h-4 w-44 rounded bg-slate-200" />
+              <div className="h-3 w-64 max-w-full rounded bg-slate-200" />
             </div>
-            <div className="h-8 w-24 rounded bg-gray-200" />
+            <div className="hidden h-7 w-24 rounded-full bg-slate-200 sm:block" />
+            <div className="hidden h-9 w-24 rounded-lg bg-slate-200 sm:block" />
           </div>
         </div>
       ))}
@@ -74,6 +85,17 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [checkInErrors, setCheckInErrors] = useState<Record<string, string>>({});
+
+  const todayDate = new Date().toDateString();
+  const checkedInTodayCount = bookings.filter(
+    (booking) =>
+      booking.checkin &&
+      new Date(booking.checkin.checkedInAt).toDateString() === todayDate,
+  ).length;
+  const nextOpenBooking = bookings.find((booking) => !booking.checkin);
+  const nextAppointmentTime = nextOpenBooking
+    ? timeFormatter.format(new Date(nextOpenBooking.timeslot.startTime))
+    : "None";
 
   useEffect(() => {
     let isMounted = true;
@@ -149,43 +171,91 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <p className="text-lg font-semibold text-gray-950">
+    <main className="min-h-screen bg-slate-50 text-slate-950">
+      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <p className="text-base font-semibold tracking-tight text-slate-950 sm:text-lg">
             Bechtel Center Check-In
           </p>
-          <button
-            type="button"
-            onClick={logout}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-3">
+            <p className="hidden text-sm font-medium text-slate-600 sm:block">
+              {user?.name ?? "Student"}
+            </p>
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:scale-[1.02] hover:border-slate-400 hover:bg-slate-50"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-gray-950">
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
             Welcome, {user?.name ?? "Student"}
           </h1>
-          <p className="mt-2 text-base text-gray-600">
+          <p className="mt-2 text-base leading-7 text-slate-500">
             Your upcoming appointments
           </p>
+        </div>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <p className="text-sm font-medium text-slate-500">Upcoming</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+              {isLoading ? "-" : bookings.length}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <p className="text-sm font-medium text-slate-500">
+              Checked in today
+            </p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+              {isLoading ? "-" : checkedInTodayCount}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <p className="text-sm font-medium text-slate-500">
+              Next appointment
+            </p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+              {isLoading ? "-" : nextAppointmentTime}
+            </p>
+          </div>
         </div>
 
         <div className="mt-8">
           {isLoading ? <SkeletonCards /> : null}
 
           {!isLoading && bookings.length === 0 ? (
-            <div className="rounded-lg border border-gray-200 bg-white px-6 py-12 text-center text-gray-600 shadow-sm">
-              No upcoming appointments found.
+            <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-2xl text-slate-400">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-7 w-7"
+                >
+                  <path
+                    d="M8 7V3m8 4V3M4 10h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <p className="mt-4 text-sm font-medium text-slate-600">
+                No upcoming appointments found.
+              </p>
             </div>
           ) : null}
 
           {!isLoading && bookings.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {bookings.map((booking) => {
                 const isCheckingIn = checkingInId === booking.id;
                 const appointmentDate = new Date(booking.timeslot.date);
@@ -195,37 +265,43 @@ export default function DashboardPage() {
                 return (
                   <article
                     key={booking.id}
-                    className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+                    className="rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:bg-slate-50"
                   >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-semibold text-gray-950">
-                            {booking.mentor.name}
-                          </h2>
-                          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
-                            {formatMentorType(booking.mentor.mentorType)}
-                          </span>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-start gap-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-sm font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                          {getInitials(booking.mentor.name)}
                         </div>
 
-                        <p className="mt-3 text-sm font-medium text-gray-800">
-                          {dateFormatter.format(appointmentDate)}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">
-                          {timeFormatter.format(startTime)} –{" "}
-                          {timeFormatter.format(endTime)}
-                        </p>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-base font-semibold text-slate-950">
+                              {booking.mentor.name}
+                            </h2>
+                            <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-100">
+                              {formatMentorType(booking.mentor.mentorType)}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-sm font-medium text-slate-700">
+                            {dateFormatter.format(appointmentDate)}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {timeFormatter.format(startTime)} –{" "}
+                            {timeFormatter.format(endTime)}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="flex flex-col items-start gap-3 sm:items-end">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                             booking.checkin
-                              ? "bg-green-100 text-green-700"
-                              : "bg-amber-100 text-amber-800"
+                              ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
+                              : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
                           }`}
                         >
-                          {booking.checkin ? "Checked In" : "Confirmed"}
+                          {booking.checkin ? "Checked in" : "Confirmed"}
                         </span>
 
                         {!booking.checkin ? (
@@ -233,7 +309,7 @@ export default function DashboardPage() {
                             type="button"
                             onClick={() => handleCheckIn(booking.id)}
                             disabled={isCheckingIn}
-                            className="rounded-md bg-gray-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100"
                           >
                             {isCheckingIn ? "Checking in..." : "Check In"}
                           </button>
@@ -242,7 +318,7 @@ export default function DashboardPage() {
                     </div>
 
                     {checkInErrors[booking.id] ? (
-                      <p className="mt-4 text-sm text-red-600">
+                      <p className="mt-4 text-sm font-medium text-red-600">
                         {checkInErrors[booking.id]}
                       </p>
                     ) : null}
