@@ -15,11 +15,13 @@ type User = {
   name: string;
   email: string;
   role: string;
+  isAdmin: boolean;
 };
 
 type UserContextValue = {
   user: User | null;
-  login: (email: string) => Promise<void>;
+  isUserLoading: boolean;
+  login: (email: string) => Promise<User>;
   logout: () => Promise<void>;
 };
 
@@ -27,6 +29,7 @@ const UserContext = createContext<UserContextValue | null>(null);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isUserLoading, setIsUserLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,11 +51,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
     }
 
-    restoreSession().catch(() => {
-      if (isMounted) {
-        setUser(null);
-      }
-    });
+    restoreSession()
+      .catch(() => {
+        if (isMounted) {
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsUserLoading(false);
+        }
+      });
 
     return () => {
       isMounted = false;
@@ -78,6 +87,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     setUser(data.user);
+    return data.user;
   }, []);
 
   const logout = useCallback(async () => {
@@ -92,10 +102,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       user,
+      isUserLoading,
       login,
       logout,
     }),
-    [login, logout, user],
+    [isUserLoading, login, logout, user],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

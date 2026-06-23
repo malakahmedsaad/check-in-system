@@ -69,7 +69,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!pathname.startsWith("/dashboard")) {
+  if (
+    !pathname.startsWith("/dashboard") &&
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/mentor")
+  ) {
     return NextResponse.next();
   }
 
@@ -84,5 +88,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/mentor/:path*"],
 };

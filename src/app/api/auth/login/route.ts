@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     email: user.email,
     role: user.role,
     name: user.name,
+    isAdmin: user.isAdmin,
   });
 
   const response = NextResponse.json({
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
       name: user.name,
       email: user.email,
       role: user.role,
+      isAdmin: user.isAdmin,
     },
   });
 

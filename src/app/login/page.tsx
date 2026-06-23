@@ -18,8 +18,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email);
-      router.push("/dashboard");
+      const user = await login(email);
+      router.push(
+        user.isAdmin
+          ? "/admin/kiosk"
+          : user.role === "mentor"
+            ? "/mentor"
+            : "/dashboard",
+      );
     } catch (loginError) {
       setError(
         loginError instanceof Error
