@@ -24,16 +24,39 @@ enum BookingStatus {
 }
 
 model User {
-  id         String    @id @default(cuid())
-  email      String    @unique
+  id         String      @id @default(cuid())
+  email      String      @unique
   name       String
   role       Role
+  isAdmin    Boolean     @default(false)
   mentorType MentorType?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime    @default(now())
 
   timeslots         Timeslot[]
   bookingsAsStudent Booking[]  @relation("StudentBookings")
   bookingsAsMentor  Booking[]  @relation("MentorBookings")
+  shifts            Shift[]
+}
+
+// The app should treat KioskStatus as a singleton: always read/update the one existing row, never create a second one.
+model KioskStatus {
+  id        String    @id @default(cuid())
+  isOpen    Boolean   @default(false)
+  openedAt  DateTime?
+  closedAt  DateTime?
+  openedBy  String?
+  closedBy  String?
+  updatedAt DateTime  @updatedAt
+}
+
+model Shift {
+  id         String    @id @default(cuid())
+  mentorId   String
+  clockInAt  DateTime  @default(now())
+  clockOutAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  mentor User @relation(fields: [mentorId], references: [id])
 }
 
 model Timeslot {

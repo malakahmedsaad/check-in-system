@@ -5,6 +5,7 @@ export type AuthTokenPayload = {
   email: string;
   role: string;
   name: string;
+  isAdmin: boolean;
 };
 
 const encoder = new TextEncoder();
@@ -30,7 +31,8 @@ function isAuthTokenPayload(payload: unknown): payload is AuthTokenPayload {
     typeof candidate.userId === "string" &&
     typeof candidate.email === "string" &&
     typeof candidate.role === "string" &&
-    typeof candidate.name === "string"
+    typeof candidate.name === "string" &&
+    typeof candidate.isAdmin === "boolean"
   );
 }
 
@@ -57,6 +59,7 @@ export async function verifyToken(
       email: payload.email,
       role: payload.role,
       name: payload.name,
+      isAdmin: payload.isAdmin,
     };
   } catch {
     return null;

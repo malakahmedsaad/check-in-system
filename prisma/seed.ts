@@ -7,18 +7,21 @@ const mentors = [
     email: "mentor1@purdue.edu",
     name: "Alex Johnson",
     role: Role.mentor,
+    isAdmin: true,
     mentorType: MentorType.CONSULTATION,
   },
   {
     email: "mentor2@purdue.edu",
     name: "Sam Rivera",
     role: Role.mentor,
+    isAdmin: false,
     mentorType: MentorType.LAB,
   },
   {
     email: "mentor3@purdue.edu",
     name: "Jordan Lee",
     role: Role.mentor,
+    isAdmin: false,
     mentorType: MentorType.CONSULTATION,
   },
 ];
@@ -46,6 +49,7 @@ async function main() {
         update: {
           name: mentor.name,
           role: mentor.role,
+          isAdmin: mentor.isAdmin,
           mentorType: mentor.mentorType,
         },
         create: mentor,
@@ -60,10 +64,12 @@ async function main() {
         update: {
           name: student.name,
           role: student.role,
+          isAdmin: false,
           mentorType: null,
         },
         create: {
           ...student,
+          isAdmin: false,
           mentorType: null,
         },
       }),
@@ -92,6 +98,22 @@ async function main() {
       mentorId: { in: mentorIds },
     },
   });
+
+  await prisma.shift.deleteMany({
+    where: {
+      mentorId: { in: mentorIds },
+    },
+  });
+
+  const kioskStatus = await prisma.kioskStatus.findFirst();
+
+  if (!kioskStatus) {
+    await prisma.kioskStatus.create({
+      data: {
+        isOpen: false,
+      },
+    });
+  }
 
   const timeslots = await Promise.all(
     mentorUsers.flatMap((mentor, mentorIndex) =>
@@ -126,6 +148,22 @@ async function main() {
         },
       }),
     ),
+  );
+
+  await Promise.all(
+    mentorUsers.slice(0, 3).map((mentor, index) => {
+      const daysAgo = index + 1;
+      const clockInAt = daysFromNow(-daysAgo, 9 + index);
+      const clockOutAt = daysFromNow(-daysAgo, 12 + index);
+
+      return prisma.shift.create({
+        data: {
+          mentorId: mentor.id,
+          clockInAt,
+          clockOutAt,
+        },
+      });
+    }),
   );
 }
 
