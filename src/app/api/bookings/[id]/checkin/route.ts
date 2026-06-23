@@ -6,6 +6,7 @@ import {
 } from "../../../../../../lib/db/bookings";
 import { sendCheckinNotification } from "../../../../../../lib/email";
 import { getSession } from "../../../../../../lib/get-session";
+import { prisma } from "../../../../../../lib/prisma";
 
 type RouteContext = {
   params: Promise<{
@@ -38,6 +39,15 @@ export async function POST(_request: Request, context: RouteContext) {
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const kioskStatus = await prisma.kioskStatus.findFirst();
+
+    if (!kioskStatus?.isOpen) {
+      return NextResponse.json(
+        { error: "Kiosk is currently closed" },
+        { status: 403 },
+      );
     }
 
     const { id } = await context.params;
