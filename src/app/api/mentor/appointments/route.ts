@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { getAppDayRange } from "../../../../../lib/date-time";
 import { getSession } from "../../../../../lib/get-session";
 import { prisma } from "../../../../../lib/prisma";
-
-function getTodayRange() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-
-  return { start, end };
-}
 
 export async function GET() {
   try {
@@ -25,7 +16,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { start, end } = getTodayRange();
+    const { start, end } = getAppDayRange();
     const appointments = await prisma.booking.findMany({
       where: {
         mentorId: session.userId,

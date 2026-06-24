@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { useUser } from "../../../context/UserContext";
+import { APP_TIME_ZONE } from "../../../lib/date-time";
 
 type Shift = {
   id: string;
@@ -35,11 +36,13 @@ type Appointment = {
 };
 
 const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   hour: "numeric",
   minute: "2-digit",
 });
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   month: "short",
   day: "numeric",
 });
@@ -116,6 +119,11 @@ export default function MentorPage() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        await logout();
+        return;
+      }
+
       const data = (await response.json().catch(() => null)) as {
         error?: string;
       } | null;
@@ -151,6 +159,11 @@ export default function MentorPage() {
         }
 
         if (!response.ok) {
+          if (response.status === 401) {
+            await logout();
+            return;
+          }
+
           const data = (await response.json().catch(() => null)) as {
             error?: string;
           } | null;
@@ -180,7 +193,7 @@ export default function MentorPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     let isMounted = true;
@@ -196,6 +209,11 @@ export default function MentorPage() {
         }
 
         if (!response.ok) {
+          if (response.status === 401) {
+            await logout();
+            return;
+          }
+
           const data = (await response.json().catch(() => null)) as {
             error?: string;
           } | null;
@@ -225,7 +243,7 @@ export default function MentorPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [logout]);
 
   async function handleShiftToggle() {
     const isClockedIn = Boolean(shiftStatus.activeShift);
@@ -246,6 +264,11 @@ export default function MentorPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          await logout();
+          return;
+        }
+
         const data = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;

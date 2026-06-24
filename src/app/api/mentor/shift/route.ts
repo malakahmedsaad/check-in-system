@@ -5,12 +5,9 @@ import {
   clockOut,
   getActiveShift,
   getShiftsByMentorId,
+  ShiftStateError,
 } from "../../../../../lib/db/shifts";
 import { getSession } from "../../../../../lib/get-session";
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to update shift";
-}
 
 export async function GET() {
   try {
@@ -54,7 +51,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = (await request.json()) as { action?: unknown };
+    let body: { action?: unknown };
+
+    try {
+      body = (await request.json()) as { action?: unknown };
+    } catch {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
     const action = body.action;
 
     if (action !== "clock_in" && action !== "clock_out") {
@@ -69,7 +73,15 @@ export async function POST(request: Request) {
 
       return NextResponse.json(shift);
     } catch (error) {
-      return NextResponse.json({ error: getErrorMessage(error) }, { status: 400 });
+      if (error instanceof ShiftStateError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+
+      console.error(error);
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
     }
   } catch (error) {
     console.error(error);
