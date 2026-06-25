@@ -12,6 +12,9 @@ import {
   YAxis,
 } from "recharts";
 
+import { useUser } from "../../../../context/UserContext";
+import { APP_TIME_ZONE } from "../../../../lib/date-time";
+
 type AnalyticsRange = "day" | "week" | "month";
 
 type CheckinBucket = {
@@ -33,6 +36,7 @@ const ranges: { value: AnalyticsRange; label: string }[] = [
 ];
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   month: "short",
   day: "numeric",
   hour: "numeric",
@@ -62,6 +66,7 @@ function formatDuration(durationHours: number | null, clockOutAt: string | null)
 }
 
 export default function AdminAnalyticsPage() {
+  const { logout } = useUser();
   const [range, setRange] = useState<AnalyticsRange>("week");
   const [checkins, setCheckins] = useState<CheckinBucket[]>([]);
   const [shifts, setShifts] = useState<MentorShift[]>([]);
@@ -89,6 +94,11 @@ export default function AdminAnalyticsPage() {
         }
 
         if (!response.ok) {
+          if (response.status === 401) {
+            await logout();
+            return;
+          }
+
           throw new Error("Unable to load check-in analytics");
         }
 
@@ -115,7 +125,7 @@ export default function AdminAnalyticsPage() {
     return () => {
       isMounted = false;
     };
-  }, [range]);
+  }, [logout, range]);
 
   useEffect(() => {
     let isMounted = true;
@@ -131,6 +141,11 @@ export default function AdminAnalyticsPage() {
         }
 
         if (!response.ok) {
+          if (response.status === 401) {
+            await logout();
+            return;
+          }
+
           throw new Error("Unable to load mentor timesheets");
         }
 
@@ -157,7 +172,7 @@ export default function AdminAnalyticsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [logout]);
 
   const summary = useMemo(() => {
     const total = checkins.reduce((sum, bucket) => sum + bucket.count, 0);

@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 
+import {
+  addDays,
+  addMonths,
+  APP_TIME_ZONE,
+  getDateKey,
+  startOfAppDay,
+  startOfAppMonth,
+} from "../../../../../../lib/date-time";
 import { prisma } from "../../../../../../lib/prisma";
 import { requireAdmin } from "../../../../../../lib/require-admin";
 
@@ -13,52 +21,30 @@ type Bucket = {
 };
 
 const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   month: "short",
   day: "numeric",
 });
 
 const monthLabelFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   month: "short",
   year: "numeric",
 });
 
-function startOfDay(date: Date) {
-  const nextDate = new Date(date);
-  nextDate.setHours(0, 0, 0, 0);
-  return nextDate;
-}
-
 function startOfWeek(date: Date) {
-  const nextDate = startOfDay(date);
-  const day = nextDate.getDay();
+  const nextDate = startOfAppDay(date);
+  const day = nextDate.getUTCDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
-  nextDate.setDate(nextDate.getDate() + mondayOffset);
-  return nextDate;
-}
-
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
-}
-
-function addMonths(date: Date, months: number) {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+  return addDays(nextDate, mondayOffset);
 }
 
 function keyForDate(date: Date, range: AnalyticsRange) {
   if (range === "month") {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}`;
+    return getDateKey(date).slice(0, 7);
   }
 
-  return date.toISOString().slice(0, 10);
+  return getDateKey(date);
 }
 
 function labelForDate(date: Date, range: AnalyticsRange) {
@@ -83,7 +69,7 @@ function createBuckets(range: AnalyticsRange) {
   const today = new Date();
 
   if (range === "day") {
-    const start = addDays(startOfDay(today), -6);
+    const start = addDays(startOfAppDay(today), -6);
     const buckets = Array.from({ length: 7 }, (_, index) => {
       const bucketStart = addDays(start, index);
       return {
@@ -98,7 +84,7 @@ function createBuckets(range: AnalyticsRange) {
   }
 
   if (range === "month") {
-    const start = addMonths(startOfMonth(today), -5);
+    const start = addMonths(startOfAppMonth(today), -5);
     const buckets = Array.from({ length: 6 }, (_, index) => {
       const bucketStart = addMonths(start, index);
       return {
@@ -128,11 +114,11 @@ function createBuckets(range: AnalyticsRange) {
 
 function bucketKeyForCheckin(date: Date, range: AnalyticsRange) {
   if (range === "day") {
-    return keyForDate(startOfDay(date), range);
+    return keyForDate(startOfAppDay(date), range);
   }
 
   if (range === "month") {
-    return keyForDate(startOfMonth(date), range);
+    return keyForDate(startOfAppMonth(date), range);
   }
 
   return keyForDate(startOfWeek(date), range);

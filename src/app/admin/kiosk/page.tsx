@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { useUser } from "../../../../context/UserContext";
+import { APP_TIME_ZONE } from "../../../../lib/date-time";
 
 type KioskStatus = {
   isOpen: boolean;
@@ -9,6 +12,7 @@ type KioskStatus = {
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   month: "long",
   day: "numeric",
   hour: "numeric",
@@ -24,43 +28,39 @@ function formatTimestamp(value: string | null) {
 }
 
 export default function AdminKioskPage() {
+  const { logout } = useUser();
   const [status, setStatus] = useState<KioskStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadStatus() {
+  const loadStatus = useCallback(async (): Promise<KioskStatus | null> => {
     const response = await fetch("/api/admin/kiosk", {
       credentials: "include",
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        await logout();
+        return null;
+      }
+
       throw new Error("Unable to load kiosk status");
     }
 
-    const data = (await response.json()) as KioskStatus;
-    setStatus(data);
-  }
+    return (await response.json()) as KioskStatus;
+  }, [logout]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadInitialStatus() {
       try {
-        const response = await fetch("/api/admin/kiosk", {
-          credentials: "include",
-        });
+        const data = await loadStatus();
 
-        if (!isMounted) {
-          return;
+        if (isMounted && data) {
+          setStatus(data);
         }
-
-        if (!response.ok) {
-          throw new Error("Unable to load kiosk status");
-        }
-
-        const data = (await response.json()) as KioskStatus;
-        setStatus(data);
       } catch {
         if (isMounted) {
           setError("Unable to load kiosk status");
@@ -77,7 +77,7 @@ export default function AdminKioskPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadStatus]);
 
   async function handleToggle() {
     if (!status) {
@@ -107,7 +107,11 @@ export default function AdminKioskPage() {
         throw new Error(data?.error ?? "Unable to update kiosk status");
       }
 
-      await loadStatus();
+      const data = await loadStatus();
+
+      if (data) {
+        setStatus(data);
+      }
     } catch (toggleError) {
       setError(
         toggleError instanceof Error

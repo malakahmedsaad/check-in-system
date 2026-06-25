@@ -4,7 +4,14 @@ import { signToken } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { email?: unknown };
+  let body: { email?: unknown };
+
+  try {
+    body = (await request.json()) as { email?: unknown };
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
   const email = typeof body.email === "string" ? body.email.trim() : "";
 
   const user = await prisma.user.findUnique({

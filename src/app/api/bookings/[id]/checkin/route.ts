@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import {
@@ -7,6 +8,7 @@ import {
 import { sendCheckinNotification } from "../../../../../../lib/email";
 import { getSession } from "../../../../../../lib/get-session";
 import { prisma } from "../../../../../../lib/prisma";
+import { APP_TIME_ZONE } from "../../../../../../lib/date-time";
 
 type RouteContext = {
   params: Promise<{
@@ -15,17 +17,20 @@ type RouteContext = {
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   weekday: "long",
   month: "long",
   day: "numeric",
 });
 
 const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   hour: "numeric",
   minute: "2-digit",
 });
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   weekday: "long",
   month: "long",
   day: "numeric",
@@ -75,7 +80,23 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    const checkin = await checkInToBooking(id);
+    let checkin;
+
+    try {
+      checkin = await checkInToBooking(id);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        return NextResponse.json(
+          { error: "Already checked in" },
+          { status: 400 },
+        );
+      }
+
+      throw error;
+    }
 
     try {
       await sendCheckinNotification({

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useUser } from "../../../context/UserContext";
+import { APP_TIME_ZONE } from "../../../lib/date-time";
 
 type MentorType = "CONSULTATION" | "LAB" | null;
 
@@ -34,12 +35,14 @@ type KioskStatus = {
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   weekday: "long",
   month: "long",
   day: "numeric",
 });
 
 const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
   hour: "numeric",
   minute: "2-digit",
 });
@@ -90,8 +93,10 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [kioskStatus, setKioskStatus] = useState<KioskStatus | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [checkInErrors, setCheckInErrors] = useState<Record<string, string>>({});
+  const inFlightCheckins = useRef(new Set<string>());
 
   const todayDate = new Date().toDateString();
   const checkedInTodayCount = bookings.filter(
@@ -117,12 +122,18 @@ export default function DashboardPage() {
       }
 
       if (!kioskResponse.ok) {
-        setKioskStatus({ isOpen: false, openedAt: null, closedAt: null });
+        if (kioskResponse.status === 401) {
+          await logout();
+          return;
+        }
+
+        setLoadError("Unable to load kiosk status. Please try again.");
         setBookings([]);
         return;
       }
 
       const status = (await kioskResponse.json()) as KioskStatus;
+      setLoadError(null);
       setKioskStatus(status);
 
       if (!status.isOpen) {
@@ -139,18 +150,25 @@ export default function DashboardPage() {
       }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          await logout();
+          return;
+        }
+
+        setLoadError("Unable to load appointments. Please try again.");
         setBookings([]);
         return;
       }
 
       const data = (await response.json()) as Booking[];
+      setLoadError(null);
       setBookings(data);
     }
 
     loadDashboard()
       .catch(() => {
         if (isMounted) {
-          setKioskStatus({ isOpen: false, openedAt: null, closedAt: null });
+          setLoadError("Unable to load appointments. Please try again.");
           setBookings([]);
         }
       })
@@ -163,9 +181,14 @@ export default function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [logout]);
 
   async function handleCheckIn(bookingId: string) {
+    if (inFlightCheckins.current.has(bookingId)) {
+      return;
+    }
+
+    inFlightCheckins.current.add(bookingId);
     setCheckingInId(bookingId);
     setCheckInErrors((currentErrors) => {
       const nextErrors = { ...currentErrors };
@@ -203,6 +226,7 @@ export default function DashboardPage() {
             : "Check-in failed. Please try again.",
       }));
     } finally {
+      inFlightCheckins.current.delete(bookingId);
       setCheckingInId(null);
     }
   }
@@ -294,6 +318,12 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-8">
+              {loadError ? (
+                <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {loadError}
+                </p>
+              ) : null}
+
               {isLoading ? <SkeletonCards /> : null}
 
               {!isLoading && bookings.length === 0 ? (
