@@ -1,6 +1,7 @@
 import { BookingStatus, MentorType, PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const kioskStatusId = "singleton";
 
 const mentors = [
   {
@@ -105,15 +106,14 @@ async function main() {
     },
   });
 
-  const kioskStatus = await prisma.kioskStatus.findFirst();
-
-  if (!kioskStatus) {
-    await prisma.kioskStatus.create({
-      data: {
-        isOpen: false,
-      },
-    });
-  }
+  await prisma.kioskStatus.upsert({
+    where: { id: kioskStatusId },
+    update: {},
+    create: {
+      id: kioskStatusId,
+      isOpen: false,
+    },
+  });
 
   const timeslots = await Promise.all(
     mentorUsers.flatMap((mentor, mentorIndex) =>

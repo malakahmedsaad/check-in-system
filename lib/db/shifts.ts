@@ -1,8 +1,15 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "../prisma";
 
 export type ShiftRecord = Prisma.ShiftGetPayload<Record<string, never>>;
+
+export class ShiftStateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ShiftStateError";
+  }
+}
 
 export async function getActiveShift(
   mentorId: string,
@@ -22,22 +29,33 @@ export async function clockIn(mentorId: string): Promise<ShiftRecord> {
   const activeShift = await getActiveShift(mentorId);
 
   if (activeShift) {
-    throw new Error("Mentor is already clocked in");
+    throw new ShiftStateError("Mentor is already clocked in");
   }
 
-  return prisma.shift.create({
-    data: {
-      mentorId,
-      clockInAt: new Date(),
-    },
-  });
+  try {
+    return await prisma.shift.create({
+      data: {
+        mentorId,
+        clockInAt: new Date(),
+      },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new ShiftStateError("Mentor is already clocked in");
+    }
+
+    throw error;
+  }
 }
 
 export async function clockOut(mentorId: string): Promise<ShiftRecord> {
   const activeShift = await getActiveShift(mentorId);
 
   if (!activeShift) {
-    throw new Error("No active shift found");
+    throw new ShiftStateError("No active shift found");
   }
 
   return prisma.shift.update({

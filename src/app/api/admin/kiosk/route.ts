@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAdmin } from "../../../../../lib/require-admin";
 
+const KIOSK_STATUS_ID = "singleton";
+
 function serializeStatus(status: {
   isOpen: boolean;
   openedAt: Date | null;
@@ -16,14 +18,13 @@ function serializeStatus(status: {
 }
 
 async function findOrCreateKioskStatus() {
-  const existingStatus = await prisma.kioskStatus.findFirst();
-
-  if (existingStatus) {
-    return existingStatus;
-  }
-
-  return prisma.kioskStatus.create({
-    data: {
+  return prisma.kioskStatus.upsert({
+    where: {
+      id: KIOSK_STATUS_ID,
+    },
+    update: {},
+    create: {
+      id: KIOSK_STATUS_ID,
       isOpen: false,
     },
   });
@@ -31,7 +32,11 @@ async function findOrCreateKioskStatus() {
 
 export async function GET() {
   try {
-    const status = await prisma.kioskStatus.findFirst();
+    const status = await prisma.kioskStatus.findUnique({
+      where: {
+        id: KIOSK_STATUS_ID,
+      },
+    });
 
     if (!status) {
       return NextResponse.json({
@@ -59,7 +64,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = (await request.json()) as { action?: unknown };
+    let body: { action?: unknown };
+
+    try {
+      body = (await request.json()) as { action?: unknown };
+    } catch {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
     const action = body.action;
 
     if (action !== "open" && action !== "close") {

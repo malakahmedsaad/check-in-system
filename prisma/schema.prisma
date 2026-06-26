@@ -38,7 +38,7 @@ model User {
   shifts            Shift[]
 }
 
-// The app should treat KioskStatus as a singleton: always read/update the one existing row, never create a second one.
+// The app treats KioskStatus as a singleton by always upserting the row with id "singleton".
 model KioskStatus {
   id        String    @id @default(cuid())
   isOpen    Boolean   @default(false)
