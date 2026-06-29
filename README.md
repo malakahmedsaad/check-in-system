@@ -55,8 +55,27 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+
 used commands:
 
 npx prisma studio
 npx prisma generate
 pnpm list prisma @prisma/client
+./node_modules/.bin/tsc --noEmit
+./node_modules/.bin/eslint \
+context/UserContext.tsx \
+src/app/api/auth/me/route.ts \
+src/app/login/page.tsx \
+src/app/dashboard/page.tsx \
+src/app/layout.tsx \
+src/app/page.tsx
+
+./node_modules/.bin/next dev --port 3000
+npm run dev
+
+node -e 'const { PrismaClient } = require("@prisma/client"); const prisma = new PrismaClient(); prisma.checkin.deleteMany().then((result) => console.log(JSON.stringify(result))).finally(() => prisma.$disconnect());
+./node_modules/.bin/eslint lib/email.ts 'src/app/api/bookings/[id]/checkin/route.ts
+
+curl -s -c /tmp/checkin-cookies.txt -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"email":"student1@purdue.edu"}' && printf '\n' && curl -i -b /tmp/checkin-cookies.txt -X POST http://localhost:3000/api/bookings/cmqb4u29s000vy7d9nb9349pr/checkin
+
+
