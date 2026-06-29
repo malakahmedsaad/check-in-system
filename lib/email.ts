@@ -1,23 +1,5 @@
 import { Resend } from "resend";
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const resendFromEmail = process.env.RESEND_FROM_EMAIL;
-
-if (!resendApiKey) {
-  throw new Error("RESEND_API_KEY is not configured");
-}
-
-if (!resendFromEmail) {
-  throw new Error("RESEND_FROM_EMAIL is not configured");
-}
-
-const checkedResendApiKey = resendApiKey;
-const checkedResendFromEmail = resendFromEmail;
-const resend = new Resend(checkedResendApiKey);
-
-// Temporary test recipient until seeded mentor accounts have real verified emails.
-const checkinNotificationRecipient = "malkahmedsaad2005@gmail.com";
-
 export interface CheckinEmailParams {
   mentorEmail: string;
   mentorName: string;
@@ -30,7 +12,21 @@ export interface CheckinEmailParams {
 }
 
 export async function sendCheckinNotification(params: CheckinEmailParams) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendFromEmail = process.env.RESEND_FROM_EMAIL;
+  const recipient = process.env.CHECKIN_NOTIFICATION_RECIPIENT ?? params.mentorEmail;
+
+  if (!resendApiKey || !resendFromEmail) {
+    console.warn("Check-in email skipped: Resend is not configured");
+    return;
+  }
+
+  const resend = new Resend(resendApiKey);
   const subject = `${params.studentName} has arrived for your appointment`;
+  const testRecipientNote =
+    recipient !== params.mentorEmail
+      ? `\n\nNote: this test notification was sent to ${recipient} instead of ${params.mentorEmail}.`
+      : "";
 
   const text = `
 Hi ${params.mentorName},
@@ -43,19 +39,12 @@ Appointment details:
 - Checked in at: ${params.checkedInAt}
 
 Please head to the meeting room when ready.
-
-Note: this test notification was sent to ${checkinNotificationRecipient} instead of ${params.mentorEmail}.
+${testRecipientNote}
   `.trim();
 
-  console.log("Check-in email attempt:", {
-    to: checkinNotificationRecipient,
-    subject,
-    timestamp: new Date().toISOString(),
-  });
-
   const response = await resend.emails.send({
-    from: checkedResendFromEmail,
-    to: checkinNotificationRecipient,
+    from: resendFromEmail,
+    to: recipient,
     subject,
     text,
   });
@@ -64,6 +53,4 @@ Note: this test notification was sent to ${checkinNotificationRecipient} instead
     console.error("Resend error:", response.error);
     return;
   }
-
-  console.log("Email sent successfully, id:", response.data.id);
 }
