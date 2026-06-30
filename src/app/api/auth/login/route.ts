@@ -25,12 +25,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const isAdmin = user.role === "admin";
+
   const token = await signToken({
     userId: user.id,
     email: user.email,
     role: user.role,
     name: user.name,
-    isAdmin: user.isAdmin,
+    isAdmin,
   });
 
   const response = NextResponse.json({
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
       name: user.name,
       email: user.email,
       role: user.role,
-      isAdmin: user.isAdmin,
+      isAdmin,
     },
   });
 

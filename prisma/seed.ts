@@ -3,26 +3,30 @@ import { BookingStatus, MentorType, PrismaClient, Role } from "@prisma/client";
 const prisma = new PrismaClient();
 const kioskStatusId = "singleton";
 
+const admin = {
+  email: "admin@purdue.edu",
+  name: "Front desk staff",
+  role: Role.admin,
+  mentorType: null,
+};
+
 const mentors = [
   {
     email: "mentor1@purdue.edu",
     name: "Alex Johnson",
     role: Role.mentor,
-    isAdmin: true,
     mentorType: MentorType.CONSULTATION,
   },
   {
     email: "mentor2@purdue.edu",
     name: "Sam Rivera",
     role: Role.mentor,
-    isAdmin: false,
     mentorType: MentorType.LAB,
   },
   {
     email: "mentor3@purdue.edu",
     name: "Jordan Lee",
     role: Role.mentor,
-    isAdmin: false,
     mentorType: MentorType.CONSULTATION,
   },
 ];
@@ -43,6 +47,16 @@ function daysFromNow(days: number, hour: number) {
 }
 
 async function main() {
+  await prisma.user.upsert({
+    where: { email: admin.email },
+    update: {
+      name: admin.name,
+      role: admin.role,
+      mentorType: admin.mentorType,
+    },
+    create: admin,
+  });
+
   const mentorUsers = await Promise.all(
     mentors.map((mentor) =>
       prisma.user.upsert({
@@ -50,7 +64,6 @@ async function main() {
         update: {
           name: mentor.name,
           role: mentor.role,
-          isAdmin: mentor.isAdmin,
           mentorType: mentor.mentorType,
         },
         create: mentor,
@@ -65,12 +78,10 @@ async function main() {
         update: {
           name: student.name,
           role: student.role,
-          isAdmin: false,
           mentorType: null,
         },
         create: {
           ...student,
-          isAdmin: false,
           mentorType: null,
         },
       }),

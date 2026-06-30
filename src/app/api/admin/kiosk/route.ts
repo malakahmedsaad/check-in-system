@@ -18,12 +18,14 @@ function serializeStatus(status: {
 }
 
 async function findOrCreateKioskStatus() {
-  return prisma.kioskStatus.upsert({
-    where: {
-      id: KIOSK_STATUS_ID,
-    },
-    update: {},
-    create: {
+  const existingStatus = await prisma.kioskStatus.findFirst();
+
+  if (existingStatus) {
+    return existingStatus;
+  }
+
+  return prisma.kioskStatus.create({
+    data: {
       id: KIOSK_STATUS_ID,
       isOpen: false,
     },
@@ -32,11 +34,7 @@ async function findOrCreateKioskStatus() {
 
 export async function GET() {
   try {
-    const status = await prisma.kioskStatus.findUnique({
-      where: {
-        id: KIOSK_STATUS_ID,
-      },
-    });
+    const status = await prisma.kioskStatus.findFirst();
 
     if (!status) {
       return NextResponse.json({

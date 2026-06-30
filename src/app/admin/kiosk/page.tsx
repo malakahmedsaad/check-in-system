@@ -28,7 +28,7 @@ function formatTimestamp(value: string | null) {
 }
 
 export default function AdminKioskPage() {
-  const { logout } = useUser();
+  const { user, isUserLoading, logout } = useUser();
   const [status, setStatus] = useState<KioskStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
@@ -55,6 +55,11 @@ export default function AdminKioskPage() {
     let isMounted = true;
 
     async function loadInitialStatus() {
+      if (isUserLoading || !user?.isAdmin) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const data = await loadStatus();
 
@@ -77,7 +82,7 @@ export default function AdminKioskPage() {
     return () => {
       isMounted = false;
     };
-  }, [loadStatus]);
+  }, [isUserLoading, loadStatus, user?.isAdmin]);
 
   async function handleToggle() {
     if (!status) {
@@ -124,6 +129,16 @@ export default function AdminKioskPage() {
   }
 
   const isOpen = status?.isOpen ?? false;
+
+  if (!isUserLoading && !user?.isAdmin) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          You don&apos;t have access to this page
+        </h1>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-12rem)] items-center">

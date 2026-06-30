@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   student
   mentor
+  admin
 }
 
 enum MentorType {
@@ -28,7 +29,6 @@ model User {
   email      String      @unique
   name       String
   role       Role
-  isAdmin    Boolean     @default(false)
   mentorType MentorType?
   createdAt  DateTime    @default(now())
 
@@ -36,6 +36,26 @@ model User {
   bookingsAsStudent Booking[]  @relation("StudentBookings")
   bookingsAsMentor  Booking[]  @relation("MentorBookings")
   shifts            Shift[]
+}
+
+// A token is created when someone requests a login link, emailed to them, and marked usedAt when redeemed.
+// Tokens expire 15 minutes after creation and can only be used once.
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// Guests are never created as User records; this standalone log table is separate from authenticated User/Booking/Checkin flows.
+model Guest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  purpose   String
+  visitedAt DateTime @default(now())
 }
 
 // The app treats KioskStatus as a singleton by always upserting the row with id "singleton".
