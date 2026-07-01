@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+const MAGIC_LINK_EMAIL_RECIPIENT = "malkahmedsaad2005@gmail.com";
+
 export interface CheckinEmailParams {
   mentorEmail: string;
   mentorName: string;
@@ -9,6 +11,12 @@ export interface CheckinEmailParams {
   startTime: string;
   endTime: string;
   checkedInAt: string;
+}
+
+export interface MagicLinkEmailParams {
+  to: string;
+  name: string;
+  link: string;
 }
 
 export async function sendCheckinNotification(params: CheckinEmailParams) {
@@ -52,5 +60,42 @@ ${testRecipientNote}
   if (response.error) {
     console.error("Resend error:", response.error);
     return;
+  }
+}
+
+export async function sendMagicLinkEmail(params: MagicLinkEmailParams) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendFromEmail = process.env.RESEND_FROM_EMAIL;
+  const recipient = MAGIC_LINK_EMAIL_RECIPIENT;
+  const redirectedRecipientNote =
+    recipient !== params.to
+      ? `\n\nNote: this sign-in link was requested for ${params.to} and redirected to ${recipient}.`
+      : "";
+
+  if (!resendApiKey || !resendFromEmail) {
+    console.warn("Magic link email skipped: Resend is not configured");
+    return;
+  }
+
+  const resend = new Resend(resendApiKey);
+  const text = `
+Hi ${params.name},
+
+Use this link to sign in:
+${params.link}
+
+This link expires in 15 minutes and can only be used once.
+${redirectedRecipientNote}
+  `.trim();
+
+  const response = await resend.emails.send({
+    from: resendFromEmail,
+    to: recipient,
+    subject: "Your sign-in link",
+    text,
+  });
+
+  if (response.error) {
+    console.error("Resend error:", response.error);
   }
 }

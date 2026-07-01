@@ -1,38 +1,44 @@
 import { NextResponse } from "next/server";
 
 import { signToken } from "../../../../../lib/auth";
+import { verifyMagicLinkToken } from "../../../../../lib/magic-link";
 import { prisma } from "../../../../../lib/prisma";
 
 export async function POST(request: Request) {
-  let body: { email?: unknown };
+  let body: { token?: unknown };
 
   try {
-    body = (await request.json()) as { email?: unknown };
+    body = (await request.json()) as { token?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const token = typeof body.token === "string" ? body.token.trim() : "";
+  const verification = await verifyMagicLinkToken(token);
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user) {
+  if (!verification) {
     return NextResponse.json(
-      { error: "No account found for this email" },
+      { error: "This link is invalid or has expired" },
       { status: 401 },
     );
   }
 
-  const isAdmin = user.role === "admin";
+  const user = await prisma.user.findUnique({
+    where: { email: verification.email },
+  });
 
-  const token = await signToken({
+  if (!user || user.role === "admin") {
+    return NextResponse.json(
+      { error: "This link is invalid or has expired" },
+      { status: 401 },
+    );
+  }
+
+  const sessionToken = await signToken({
     userId: user.id,
     email: user.email,
     role: user.role,
     name: user.name,
-    isAdmin,
   });
 
   const response = NextResponse.json({
@@ -40,11 +46,10 @@ export async function POST(request: Request) {
       name: user.name,
       email: user.email,
       role: user.role,
-      isAdmin,
     },
   });
 
-  response.cookies.set("token", token, {
+  response.cookies.set("token", sessionToken, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

@@ -21,7 +21,6 @@ type User = {
 type UserContextValue = {
   user: User | null;
   isUserLoading: boolean;
-  login: (email: string) => Promise<User>;
   logout: () => Promise<void>;
 };
 
@@ -68,28 +67,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    const data = (await response.json()) as {
-      user?: User;
-      error?: string;
-    };
-
-    if (!response.ok || !data.user) {
-      throw new Error(data.error ?? "Unable to sign in");
-    }
-
-    setUser(data.user);
-    return data.user;
-  }, []);
-
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", {
       method: "POST",
@@ -103,10 +80,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       isUserLoading,
-      login,
       logout,
     }),
-    [isUserLoading, login, logout, user],
+    [isUserLoading, logout, user],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
