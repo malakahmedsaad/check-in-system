@@ -7,7 +7,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname === "/login" ||
-    pathname === "/api/auth/login" ||
+    pathname === "/api/auth/request-link" ||
+    pathname === "/api/auth/verify-link" ||
     pathname === "/api/auth/logout" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
