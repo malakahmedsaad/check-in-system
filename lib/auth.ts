@@ -5,10 +5,7 @@ export type AuthTokenPayload = {
   email: string;
   role: string;
   name: string;
-  isAdmin: boolean;
 };
-
-type AuthTokenClaims = Omit<AuthTokenPayload, "isAdmin">;
 
 const encoder = new TextEncoder();
 
@@ -22,7 +19,7 @@ function getJwtSecret() {
   return encoder.encode(secret);
 }
 
-function isAuthTokenClaims(payload: unknown): payload is AuthTokenClaims {
+function isAuthTokenClaims(payload: unknown): payload is AuthTokenPayload {
   if (!payload || typeof payload !== "object") {
     return false;
   }
@@ -37,7 +34,7 @@ function isAuthTokenClaims(payload: unknown): payload is AuthTokenClaims {
   );
 }
 
-export async function signToken(payload: AuthTokenClaims): Promise<string> {
+export async function signToken(payload: AuthTokenPayload): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -60,7 +57,6 @@ export async function verifyToken(
       email: payload.email,
       role: payload.role,
       name: payload.name,
-      isAdmin: payload.role === "admin",
     };
   } catch {
     return null;

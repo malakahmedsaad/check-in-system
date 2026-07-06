@@ -304,7 +304,7 @@ export default function MentorPage() {
             <p className="hidden text-sm font-medium text-slate-600 sm:block">
               {user?.name ?? "Mentor"}
             </p>
-            {user?.isAdmin ? (
+            {user?.role === "admin" ? (
               <Link
                 href="/admin/kiosk"
                 className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-slate-700"

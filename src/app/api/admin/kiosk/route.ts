@@ -62,18 +62,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    let body: { action?: unknown };
+    let body: { action?: unknown; pin?: unknown };
 
     try {
-      body = (await request.json()) as { action?: unknown };
+      body = (await request.json()) as { action?: unknown; pin?: unknown };
     } catch {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
     const action = body.action;
+    const pin = typeof body.pin === "string" ? body.pin : "";
 
     if (action !== "open" && action !== "close") {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    if (pin !== process.env.ADMIN_PIN) {
+      return NextResponse.json({ error: "Incorrect PIN" }, { status: 401 });
     }
 
     const status = await findOrCreateKioskStatus();

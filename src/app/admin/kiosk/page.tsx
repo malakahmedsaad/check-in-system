@@ -32,6 +32,7 @@ export default function AdminKioskPage() {
   const [status, setStatus] = useState<KioskStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
+  const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const loadStatus = useCallback(async (): Promise<KioskStatus | null> => {
@@ -55,7 +56,7 @@ export default function AdminKioskPage() {
     let isMounted = true;
 
     async function loadInitialStatus() {
-      if (isUserLoading || !user?.isAdmin) {
+      if (isUserLoading || user?.role !== "admin") {
         setIsLoading(false);
         return;
       }
@@ -82,10 +83,10 @@ export default function AdminKioskPage() {
     return () => {
       isMounted = false;
     };
-  }, [isUserLoading, loadStatus, user?.isAdmin]);
+  }, [isUserLoading, loadStatus, user?.role]);
 
   async function handleToggle() {
-    if (!status) {
+    if (!status || !pin) {
       return;
     }
 
@@ -101,6 +102,7 @@ export default function AdminKioskPage() {
         credentials: "include",
         body: JSON.stringify({
           action: status.isOpen ? "close" : "open",
+          pin,
         }),
       });
 
@@ -124,13 +126,14 @@ export default function AdminKioskPage() {
           : "Unable to update kiosk status",
       );
     } finally {
+      setPin("");
       setIsToggling(false);
     }
   }
 
   const isOpen = status?.isOpen ?? false;
 
-  if (!isUserLoading && !user?.isAdmin) {
+  if (!isUserLoading && user?.role !== "admin") {
     return (
       <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -191,22 +194,42 @@ export default function AdminKioskPage() {
           </p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={isLoading || isToggling || !status}
-          className={`mt-8 w-full rounded-lg px-5 py-4 text-base font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100 ${
-            isOpen
-              ? "bg-slate-800 hover:bg-slate-700"
-              : "bg-emerald-600 hover:bg-emerald-500"
-          }`}
-        >
-          {isToggling
-            ? "Updating kiosk..."
-            : isOpen
-              ? "Close kiosk"
-              : "Open kiosk for today"}
-        </button>
+        <div className="mt-8 grid gap-3 sm:grid-cols-[minmax(0,12rem)_1fr]">
+          <div>
+            <label
+              htmlFor="kiosk-pin"
+              className="block text-sm font-medium text-slate-700"
+            >
+              PIN
+            </label>
+            <input
+              id="kiosk-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pin}
+              onChange={(event) => setPin(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-slate-950 outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleToggle}
+            disabled={isLoading || isToggling || !status || !pin}
+            className={`self-end rounded-lg px-5 py-3 text-base font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100 ${
+              isOpen
+                ? "bg-slate-800 hover:bg-slate-700"
+                : "bg-emerald-600 hover:bg-emerald-500"
+            }`}
+          >
+            {isToggling
+              ? "Updating kiosk..."
+              : isOpen
+                ? "Close kiosk"
+                : "Open kiosk for today"}
+          </button>
+        </div>
       </div>
     </div>
   );

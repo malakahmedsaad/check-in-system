@@ -15,7 +15,6 @@ type User = {
   name: string;
   email: string;
   role: string;
-  isAdmin: boolean;
 };
 
 type UserContextValue = {
