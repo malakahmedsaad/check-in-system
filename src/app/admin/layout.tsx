@@ -7,7 +7,10 @@ import { useUser } from "../../../context/UserContext";
 
 const navItems = [
   { href: "/admin/kiosk", label: "Kiosk" },
-  { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/analytics", label: "View all data" },
+  { href: "/admin/guests", label: "View guests" },
+  { href: "/admin/students", label: "View students" },
+  { href: "/admin/mentors", label: "View mentors" },
 ];
 
 export default function AdminLayout({
@@ -17,6 +20,10 @@ export default function AdminLayout({
 }>) {
   const pathname = usePathname();
   const { user, isUserLoading, logout } = useUser();
+
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -68,7 +75,7 @@ export default function AdminLayout({
               Loading admin access...
             </h1>
           </div>
-        ) : !user?.isAdmin ? (
+        ) : user?.role !== "admin" ? (
           <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
               You do not have access to this page
