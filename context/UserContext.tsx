@@ -67,12 +67,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-    });
-
-    setUser(null);
-    router.push("/login");
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      setUser(null);
+      router.push("/login");
+    }
   }, [router]);
 
   const value = useMemo(

@@ -23,12 +23,12 @@ export default function LoginPage() {
         body: JSON.stringify({ email: normalizedEmail }),
       });
 
-      const data = (await response.json()) as {
+      const data = (await response.json().catch(() => null)) as {
         error?: string;
-      };
+      } | null;
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Unable to send sign-in link");
+        throw new Error(data?.error ?? "Unable to send sign-in link");
       }
 
       setSentEmail(normalizedEmail);

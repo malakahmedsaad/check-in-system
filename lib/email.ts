@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-const MAGIC_LINK_EMAIL_RECIPIENT = "malkahmedsaad2005@gmail.com";
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface CheckinEmailParams {
   mentorEmail: string;
@@ -19,17 +19,33 @@ export interface MagicLinkEmailParams {
   link: string;
 }
 
-export async function sendCheckinNotification(params: CheckinEmailParams) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFromEmail = process.env.RESEND_FROM_EMAIL;
-  const recipient = process.env.CHECKIN_NOTIFICATION_RECIPIENT ?? params.mentorEmail;
+function getResendConfig() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
 
-  if (!resendApiKey || !resendFromEmail) {
-    console.warn("Check-in email skipped: Resend is not configured");
-    return;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured");
   }
 
-  const resend = new Resend(resendApiKey);
+  if (!fromEmail || !emailPattern.test(fromEmail)) {
+    throw new Error("RESEND_FROM_EMAIL is not configured");
+  }
+
+  return { apiKey, fromEmail };
+}
+
+function validateRecipient(email: string) {
+  if (!emailPattern.test(email)) {
+    throw new Error("Email recipient is invalid");
+  }
+
+  return email;
+}
+
+export async function sendCheckinNotification(params: CheckinEmailParams) {
+  const recipient = process.env.CHECKIN_NOTIFICATION_RECIPIENT ?? params.mentorEmail;
+  const { apiKey, fromEmail } = getResendConfig();
+  const resend = new Resend(apiKey);
   const subject = `${params.studentName} has arrived for your appointment`;
   const testRecipientNote =
     recipient !== params.mentorEmail
@@ -51,33 +67,28 @@ ${testRecipientNote}
   `.trim();
 
   const response = await resend.emails.send({
-    from: resendFromEmail,
-    to: recipient,
+    from: fromEmail,
+    to: validateRecipient(recipient),
     subject,
     text,
   });
 
   if (response.error) {
-    console.error("Resend error:", response.error);
+    console.error("Resend error:", response.error.message);
     return;
   }
 }
 
 export async function sendMagicLinkEmail(params: MagicLinkEmailParams) {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFromEmail = process.env.RESEND_FROM_EMAIL;
-  const recipient = MAGIC_LINK_EMAIL_RECIPIENT;
+  const { apiKey, fromEmail } = getResendConfig();
+  const recipient = process.env.MAGIC_LINK_EMAIL_RECIPIENT || params.to;
   const redirectedRecipientNote =
     recipient !== params.to
       ? `\n\nNote: this sign-in link was requested for ${params.to} and redirected to ${recipient}.`
       : "";
 
-  if (!resendApiKey || !resendFromEmail) {
-    console.warn("Magic link email skipped: Resend is not configured");
-    return;
-  }
-
-  const resend = new Resend(resendApiKey);
+  // SECURITY: Magic-link recipient is configurable so sign-in links are not hardcoded to a personal inbox.
+  const resend = new Resend(apiKey);
   const text = `
 Hi ${params.name},
 
@@ -89,13 +100,13 @@ ${redirectedRecipientNote}
   `.trim();
 
   const response = await resend.emails.send({
-    from: resendFromEmail,
-    to: recipient,
+    from: fromEmail,
+    to: validateRecipient(recipient),
     subject: "Your sign-in link",
     text,
   });
 
   if (response.error) {
-    console.error("Resend error:", response.error);
+    console.error("Resend error:", response.error.message);
   }
 }

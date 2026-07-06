@@ -23,6 +23,7 @@ type CheckinBucket = {
 };
 
 type MentorShift = {
+  id: string;
   mentorName: string;
   clockInAt: string;
   clockOutAt: string | null;
@@ -344,8 +345,8 @@ export default function AdminAnalyticsPage() {
                 ) : null}
 
                 {!isShiftsLoading
-                  ? shifts.map((shift, index) => (
-                      <tr key={`${shift.mentorName}-${shift.clockInAt}-${index}`}>
+                  ? shifts.map((shift) => (
+                      <tr key={shift.id}>
                         <td className="whitespace-nowrap px-5 py-4 text-sm font-semibold text-slate-950">
                           {shift.mentorName}
                         </td>
