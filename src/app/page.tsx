@@ -139,7 +139,7 @@ export default function Home() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-base font-semibold text-slate-950 sm:text-lg">
-              Bechtel Center Check-In
+              Bechtel Center Check-In Kiosk
             </p>
             <p className="mt-1 text-sm text-slate-500">
               Choose how you are visiting today.
@@ -209,9 +209,6 @@ export default function Home() {
                 ))}
               </div>
               <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-5 text-slate-400">
-                Student and peer mentor both start at the same sign-in page.
-                That is intentional; your role is matched after your email is
-                found.
               </p>
             </div>
           )}

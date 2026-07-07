@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { useUser } from "../../../context/UserContext";
 
 const navItems = [
+  { href: "/admin/overview", label: "Overview" },
   { href: "/admin/kiosk", label: "Kiosk" },
-  { href: "/admin/analytics", label: "View all data" },
-  { href: "/admin/guests", label: "View guests" },
-  { href: "/admin/students", label: "View students" },
-  { href: "/admin/mentors", label: "View mentors" },
+  { href: "/admin/guests", label: "Guests" },
+  { href: "/admin/students", label: "Students" },
+  { href: "/admin/mentors", label: "Mentors" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 export default function AdminLayout({

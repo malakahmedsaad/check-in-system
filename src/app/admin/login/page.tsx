@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
         throw new Error(data?.error ?? "Unable to sign in");
       }
 
-      router.push("/admin/kiosk");
+      router.push("/admin/overview");
     } catch (loginError) {
       setError(
         loginError instanceof Error ? loginError.message : "Unable to sign in",

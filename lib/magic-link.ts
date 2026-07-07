@@ -6,9 +6,27 @@ const MAGIC_LINK_EXPIRY_MINUTES = 15;
 
 export async function generateMagicLinkToken(email: string): Promise<string> {
   const token = crypto.randomUUID();
+  const now = new Date();
   const expiresAt = new Date(
-    Date.now() + MAGIC_LINK_EXPIRY_MINUTES * 60 * 1000,
+    now.getTime() + MAGIC_LINK_EXPIRY_MINUTES * 60 * 1000,
   );
+
+  await prisma.magicLinkToken.deleteMany({
+    where: {
+      OR: [
+        {
+          expiresAt: {
+            lte: now,
+          },
+        },
+        {
+          usedAt: {
+            not: null,
+          },
+        },
+      ],
+    },
+  });
 
   await prisma.magicLinkToken.create({
     data: {

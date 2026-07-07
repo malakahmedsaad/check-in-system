@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useUser } from "../../../../context/UserContext";
 import { APP_TIME_ZONE } from "../../../../lib/date-time";
@@ -21,7 +22,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
 
 function formatTimestamp(value: string | null) {
   if (!value) {
-    return "Not recorded";
+    return "Open Now";
   }
 
   return dateTimeFormatter.format(new Date(value));
@@ -34,6 +35,7 @@ export default function AdminKioskPage() {
   const [isToggling, setIsToggling] = useState(false);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const isToggleInFlight = useRef(false);
 
   const loadStatus = useCallback(async (): Promise<KioskStatus | null> => {
     const response = await fetch("/api/admin/kiosk", {
@@ -86,10 +88,11 @@ export default function AdminKioskPage() {
   }, [isUserLoading, loadStatus, user?.role]);
 
   async function handleToggle() {
-    if (!status || !pin) {
+    if (!status || !pin || isToggleInFlight.current) {
       return;
     }
 
+    isToggleInFlight.current = true;
     setIsToggling(true);
     setError(null);
 
@@ -126,6 +129,7 @@ export default function AdminKioskPage() {
           : "Unable to update kiosk status",
       );
     } finally {
+      isToggleInFlight.current = false;
       setPin("");
       setIsToggling(false);
     }
@@ -230,6 +234,15 @@ export default function AdminKioskPage() {
                 : "Open kiosk for today"}
           </button>
         </div>
+
+        {isOpen ? (
+          <Link
+            href="/"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 text-base font-semibold text-slate-700 transition hover:scale-[1.01] hover:border-slate-400 hover:bg-slate-50 sm:w-auto"
+          >
+            Open sign-in page
+          </Link>
+        ) : null}
       </div>
     </div>
   );
