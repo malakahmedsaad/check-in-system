@@ -4,6 +4,8 @@ import { sendMagicLinkEmail } from "../../../../../lib/email";
 import { generateMagicLinkToken } from "../../../../../lib/magic-link";
 import { prisma } from "../../../../../lib/prisma";
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: Request) {
   let body: { email?: unknown };
 
@@ -14,6 +16,17 @@ export async function POST(request: Request) {
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
+
+  if (!email) {
+    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  }
+
+  if (!emailPattern.test(email)) {
+    return NextResponse.json(
+      { error: "Enter a valid email address" },
+      { status: 400 },
+    );
+  }
 
   const user = await prisma.user.findUnique({
     where: { email },

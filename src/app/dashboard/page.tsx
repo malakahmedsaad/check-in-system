@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useUser } from "../../../context/UserContext";
+import type { BookingWithStudentSummary } from "../../../lib/db/bookings";
 import { APP_TIME_ZONE } from "../../../lib/date-time";
 
 type MentorType = "CONSULTATION" | "LAB" | null;
@@ -13,17 +14,14 @@ type Checkin = {
   checkedInAt: string;
 };
 
-type Booking = {
-  id: string;
+type SerializedBookingWithStudentSummary = Omit<
+  BookingWithStudentSummary,
+  "timeslot" | "checkin"
+> & {
   timeslot: {
     date: string;
     startTime: string;
     endTime: string;
-  };
-  mentor: {
-    name: string;
-    email: string;
-    mentorType: MentorType;
   };
   checkin: Checkin | null;
 };
@@ -90,7 +88,9 @@ function SkeletonCards() {
 
 export default function DashboardPage() {
   const { user, logout } = useUser();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<SerializedBookingWithStudentSummary[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [kioskStatus, setKioskStatus] = useState<KioskStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -160,7 +160,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const data = (await response.json()) as Booking[];
+      const data =
+        (await response.json()) as SerializedBookingWithStudentSummary[];
       setLoadError(null);
       setBookings(data);
     }

@@ -38,6 +38,8 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
+const cuidPattern = /^c[a-z0-9]{20,32}$/i;
+
 export async function POST(_request: Request, context: RouteContext) {
   try {
     const session = await getSession();
@@ -56,6 +58,11 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     const { id } = await context.params;
+
+    if (!cuidPattern.test(id)) {
+      return NextResponse.json({ error: "Invalid booking id" }, { status: 400 });
+    }
+
     const booking = await getBookingById(id);
 
     if (!booking) {

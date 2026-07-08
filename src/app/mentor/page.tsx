@@ -17,6 +17,7 @@ type Shift = {
 type ShiftStatus = {
   activeShift: Shift | null;
   recentShifts: Shift[];
+  completedShiftHours: number;
 };
 
 type Appointment = {
@@ -76,6 +77,10 @@ function formatHours(start: string, end: string | null) {
   return `${Math.max(0, hours).toFixed(1)} hours`;
 }
 
+function formatTotalHours(hours: number) {
+  return `${Math.max(0, hours).toFixed(1)} hours`;
+}
+
 function AppointmentSkeleton() {
   return (
     <div className="space-y-3">
@@ -102,6 +107,7 @@ export default function MentorPage() {
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>({
     activeShift: null,
     recentShifts: [],
+    completedShiftHours: 0,
   });
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isShiftLoading, setIsShiftLoading] = useState(true);
@@ -299,6 +305,17 @@ export default function MentorPage() {
     () => shiftStatus.recentShifts.slice(0, 10),
     [shiftStatus.recentShifts],
   );
+  const totalHoursWorked = useMemo(() => {
+    if (!activeShift) {
+      return shiftStatus.completedShiftHours;
+    }
+
+    const activeHours =
+      (now.getTime() - new Date(activeShift.clockInAt).getTime()) /
+      (1000 * 60 * 60);
+
+    return shiftStatus.completedShiftHours + Math.max(0, activeHours);
+  }, [activeShift, now, shiftStatus.completedShiftHours]);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -372,6 +389,17 @@ export default function MentorPage() {
                       Clock in when you are ready to start your shift.
                     </p>
                   )}
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 md:ml-auto">
+                  <p className="text-xs font-semibold uppercase text-slate-500">
+                    Total hours worked
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                    {isShiftLoading
+                      ? "Loading..."
+                      : formatTotalHours(totalHoursWorked)}
+                  </p>
                 </div>
 
                 <button

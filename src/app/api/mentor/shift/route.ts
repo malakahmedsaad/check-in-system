@@ -4,6 +4,7 @@ import {
   clockIn,
   clockOut,
   getActiveShift,
+  getCompletedShiftHoursByMentorId,
   getShiftsByMentorId,
   ShiftStateError,
 } from "../../../../../lib/db/shifts";
@@ -21,14 +22,16 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const [activeShift, recentShifts] = await Promise.all([
+    const [activeShift, recentShifts, completedShiftHours] = await Promise.all([
       getActiveShift(session.userId),
       getShiftsByMentorId(session.userId),
+      getCompletedShiftHoursByMentorId(session.userId),
     ]);
 
     return NextResponse.json({
       activeShift,
       recentShifts,
+      completedShiftHours,
     });
   } catch (error) {
     console.error(error);
