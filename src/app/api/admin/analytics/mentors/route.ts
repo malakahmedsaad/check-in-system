@@ -33,6 +33,7 @@ export async function GET() {
           : null;
 
         return {
+          id: shift.id,
           mentorName: shift.mentor.name,
           clockInAt: shift.clockInAt,
           clockOutAt: shift.clockOutAt,
