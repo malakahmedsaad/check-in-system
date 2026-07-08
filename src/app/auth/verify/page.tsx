@@ -30,13 +30,13 @@ function VerifyMagicLink() {
           body: JSON.stringify({ token }),
         });
 
-        const data = (await response.json()) as {
+        const data = (await response.json().catch(() => null)) as {
           user?: {
             role: string;
           };
-        };
+        } | null;
 
-        if (!response.ok || !data.user) {
+        if (!response.ok || !data?.user) {
           throw new Error("Invalid link");
         }
 
