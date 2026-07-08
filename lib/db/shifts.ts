@@ -85,3 +85,32 @@ export async function getShiftsByMentorId(
     },
   });
 }
+
+export async function getCompletedShiftHoursByMentorId(
+  mentorId: string,
+): Promise<number> {
+  const shifts = await prisma.shift.findMany({
+    where: {
+      mentorId,
+      clockOutAt: {
+        not: null,
+      },
+    },
+    select: {
+      clockInAt: true,
+      clockOutAt: true,
+    },
+  });
+
+  return shifts.reduce((totalHours, shift) => {
+    if (!shift.clockOutAt) {
+      return totalHours;
+    }
+
+    const durationHours =
+      (shift.clockOutAt.getTime() - shift.clockInAt.getTime()) /
+      (1000 * 60 * 60);
+
+    return totalHours + Math.max(0, durationHours);
+  }, 0);
+}

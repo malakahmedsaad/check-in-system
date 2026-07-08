@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bechtel Center Check-In",
+  title: "Bechtel Center Check-In Kiosk",
   description: "Student check-in, mentor shifts, and admin kiosk controls.",
 };
 

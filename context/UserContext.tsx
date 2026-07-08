@@ -20,6 +20,7 @@ type User = {
 type UserContextValue = {
   user: User | null;
   isUserLoading: boolean;
+  setAuthenticatedUser: (user: User) => void;
   logout: () => Promise<void>;
 };
 
@@ -81,6 +82,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       isUserLoading,
+      setAuthenticatedUser: setUser,
       logout,
     }),
     [isUserLoading, logout, user],

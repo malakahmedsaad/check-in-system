@@ -3,8 +3,11 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useUser } from "../../../../context/UserContext";
+
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { setAuthenticatedUser } = useUser();
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -29,10 +32,19 @@ export default function AdminLoginPage() {
 
       const data = (await response.json().catch(() => null)) as {
         error?: string;
+        user?: {
+          name: string;
+          email: string;
+          role: string;
+        };
       } | null;
 
       if (!response.ok) {
         throw new Error(data?.error ?? "Unable to sign in");
+      }
+
+      if (data?.user) {
+        setAuthenticatedUser(data.user);
       }
 
       router.push("/admin/overview");
