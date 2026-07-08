@@ -31,13 +31,14 @@ Do not commit `.env.local`.
 
 Create a PostgreSQL database for the app, then set `DATABASE_URL` to point at it.
 
-Run the schema:
+Run the Prisma migrations and generate the Prisma client:
 
 ```bash
-psql "$DATABASE_URL" -f src/lib/schema.sql
+npx prisma migrate dev
+npx prisma generate
 ```
 
-The schema creates the `users`, `timeslots`, `bookings`, and `checkins` tables.
+The migrations create the app tables and constraints defined in `prisma/schema.prisma`.
 
 ## Resend
 
@@ -77,5 +78,4 @@ node -e 'const { PrismaClient } = require("@prisma/client"); const prisma = new 
 ./node_modules/.bin/eslint lib/email.ts 'src/app/api/bookings/[id]/checkin/route.ts
 
 curl -s -c /tmp/checkin-cookies.txt -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"email":"student1@purdue.edu"}' && printf '\n' && curl -i -b /tmp/checkin-cookies.txt -X POST http://localhost:3000/api/bookings/cmqb4u29s000vy7d9nb9349pr/checkin
-
 
