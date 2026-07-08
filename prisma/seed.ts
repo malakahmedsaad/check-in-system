@@ -47,7 +47,7 @@ function daysFromNow(days: number, hour: number) {
 }
 
 async function main() {
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { email: admin.email },
     update: {
       name: admin.name,
@@ -56,6 +56,7 @@ async function main() {
     },
     create: admin,
   });
+  console.log(`Admin user upserted: ${adminUser.email}`);
 
   const mentorUsers = await Promise.all(
     mentors.map((mentor) =>
@@ -69,6 +70,11 @@ async function main() {
         create: mentor,
       }),
     ),
+  );
+  console.log(
+    `Mentor users upserted: ${mentorUsers
+      .map((mentor) => mentor.email)
+      .join(", ")}`,
   );
 
   const studentUsers = await Promise.all(
@@ -87,37 +93,13 @@ async function main() {
       }),
     ),
   );
+  console.log(
+    `Student users upserted: ${studentUsers
+      .map((student) => student.email)
+      .join(", ")}`,
+  );
 
-  const mentorIds = mentorUsers.map((mentor) => mentor.id);
-  const studentIds = studentUsers.map((student) => student.id);
-
-  await prisma.checkin.deleteMany({
-    where: {
-      booking: {
-        OR: [{ mentorId: { in: mentorIds } }, { studentId: { in: studentIds } }],
-      },
-    },
-  });
-
-  await prisma.booking.deleteMany({
-    where: {
-      OR: [{ mentorId: { in: mentorIds } }, { studentId: { in: studentIds } }],
-    },
-  });
-
-  await prisma.timeslot.deleteMany({
-    where: {
-      mentorId: { in: mentorIds },
-    },
-  });
-
-  await prisma.shift.deleteMany({
-    where: {
-      mentorId: { in: mentorIds },
-    },
-  });
-
-  await prisma.kioskStatus.upsert({
+  const kioskStatus = await prisma.kioskStatus.upsert({
     where: { id: kioskStatusId },
     update: {},
     create: {
@@ -125,14 +107,27 @@ async function main() {
       isOpen: false,
     },
   });
+  console.log(`Kiosk status upserted: ${kioskStatus.id}`);
 
   const timeslots = await Promise.all(
     mentorUsers.flatMap((mentor, mentorIndex) =>
-      [0, 1].map((slotIndex) => {
+      [0, 1].map(async (slotIndex) => {
         const dayOffset = mentorIndex * 2 + slotIndex + 1;
         const startHour = slotIndex === 0 ? 10 : 14;
         const startTime = daysFromNow(dayOffset, startHour);
         const endTime = daysFromNow(dayOffset, startHour + 1);
+
+        const existingTimeslot = await prisma.timeslot.findFirst({
+          where: {
+            mentorId: mentor.id,
+            startTime,
+            endTime,
+          },
+        });
+
+        if (existingTimeslot) {
+          return existingTimeslot;
+        }
 
         return prisma.timeslot.create({
           data: {
@@ -145,10 +140,23 @@ async function main() {
       }),
     ),
   );
+  console.log(`Timeslots ensured: ${timeslots.length}`);
 
-  await Promise.all(
-    timeslots.map((timeslot, index) =>
-      prisma.booking.create({
+  const bookings = await Promise.all(
+    timeslots.map(async (timeslot, index) => {
+      const existingBooking = await prisma.booking.findFirst({
+        where: {
+          studentId: studentUsers[index % studentUsers.length].id,
+          mentorId: timeslot.mentorId,
+          timeslotId: timeslot.id,
+        },
+      });
+
+      if (existingBooking) {
+        return existingBooking;
+      }
+
+      return prisma.booking.create({
         data: {
           studentId: studentUsers[index % studentUsers.length].id,
           mentorId: timeslot.mentorId,
@@ -157,15 +165,28 @@ async function main() {
           endDate: timeslot.endTime,
           status: BookingStatus.CONFIRMED,
         },
-      }),
-    ),
+      });
+    }),
   );
+  console.log(`Bookings ensured: ${bookings.length}`);
 
-  await Promise.all(
-    mentorUsers.slice(0, 3).map((mentor, index) => {
+  const shifts = await Promise.all(
+    mentorUsers.slice(0, 3).map(async (mentor, index) => {
       const daysAgo = index + 1;
       const clockInAt = daysFromNow(-daysAgo, 9 + index);
       const clockOutAt = daysFromNow(-daysAgo, 12 + index);
+
+      const existingShift = await prisma.shift.findFirst({
+        where: {
+          mentorId: mentor.id,
+          clockInAt,
+          clockOutAt,
+        },
+      });
+
+      if (existingShift) {
+        return existingShift;
+      }
 
       return prisma.shift.create({
         data: {
@@ -176,6 +197,7 @@ async function main() {
       });
     }),
   );
+  console.log(`Shifts ensured: ${shifts.length}`);
 }
 
 main()

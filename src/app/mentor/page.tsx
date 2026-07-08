@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useUser } from "../../../context/UserContext";
 import { APP_TIME_ZONE } from "../../../lib/date-time";
@@ -112,6 +112,7 @@ export default function MentorPage() {
     null,
   );
   const [now, setNow] = useState(() => new Date());
+  const isShiftToggleInFlight = useRef(false);
 
   async function loadShiftStatus() {
     const response = await fetch("/api/mentor/shift", {
@@ -246,6 +247,11 @@ export default function MentorPage() {
   }, [logout]);
 
   async function handleShiftToggle() {
+    if (isShiftToggleInFlight.current) {
+      return;
+    }
+
+    isShiftToggleInFlight.current = true;
     const isClockedIn = Boolean(shiftStatus.activeShift);
 
     setIsTogglingShift(true);
@@ -283,6 +289,7 @@ export default function MentorPage() {
         error instanceof Error ? error.message : "Unable to update shift",
       );
     } finally {
+      isShiftToggleInFlight.current = false;
       setIsTogglingShift(false);
     }
   }

@@ -58,7 +58,7 @@ model Guest {
   visitedAt DateTime @default(now())
 }
 
-// The app treats KioskStatus as a singleton by always upserting the row with id "singleton".
+// The app treats KioskStatus as a singleton. A SQL check constraint enforces id = "singleton".
 model KioskStatus {
   id        String    @id @default(cuid())
   isOpen    Boolean   @default(false)
@@ -69,6 +69,13 @@ model KioskStatus {
   updatedAt DateTime  @updatedAt
 }
 
+model AppSetting {
+  id           String   @id
+  adminPinHash String
+  adminPinSalt String
+  updatedAt    DateTime @updatedAt
+}
+
 model Shift {
   id         String    @id @default(cuid())
   mentorId   String
@@ -76,7 +83,8 @@ model Shift {
   clockOutAt DateTime?
   createdAt  DateTime  @default(now())
 
-  mentor User @relation(fields: [mentorId], references: [id])
+  // A SQL partial unique index allows only one active shift per mentor.
+  mentor User @relation(fields: [mentorId], references: [id], onDelete: Cascade)
 }
 
 model Timeslot {
@@ -86,7 +94,7 @@ model Timeslot {
   startTime DateTime
   endTime   DateTime
 
-  mentor   User      @relation(fields: [mentorId], references: [id])
+  mentor   User      @relation(fields: [mentorId], references: [id], onDelete: Cascade)
   bookings Booking[]
 }
 
@@ -100,9 +108,9 @@ model Booking {
   status     BookingStatus
   createdAt  DateTime      @default(now())
 
-  student  User     @relation("StudentBookings", fields: [studentId], references: [id])
-  mentor   User     @relation("MentorBookings", fields: [mentorId], references: [id])
-  timeslot Timeslot @relation(fields: [timeslotId], references: [id])
+  student  User     @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  mentor   User     @relation("MentorBookings", fields: [mentorId], references: [id], onDelete: Cascade)
+  timeslot Timeslot @relation(fields: [timeslotId], references: [id], onDelete: Cascade)
   checkin  Checkin?
 }
 
@@ -111,5 +119,5 @@ model Checkin {
   bookingId   String   @unique
   checkedInAt DateTime @default(now())
 
-  booking Booking @relation(fields: [bookingId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
