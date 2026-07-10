@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Provides client-side user session restoration and logout state across the app.
+
 import {
   createContext,
   useCallback,

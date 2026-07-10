@@ -1,3 +1,5 @@
+// Purpose: Creates and redeems one-time magic-link login tokens.
+
 import crypto from "crypto";
 
 import { prisma } from "./prisma";

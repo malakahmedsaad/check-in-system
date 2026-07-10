@@ -1,3 +1,5 @@
+// Purpose: Sends Resend-powered check-in and magic-link notification emails.
+
 import { Resend } from "resend";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

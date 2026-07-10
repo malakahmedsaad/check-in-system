@@ -1,3 +1,5 @@
+// Purpose: Verifies and updates the stored admin PIN hash.
+
 import crypto from "crypto";
 
 import { prisma } from "./prisma";

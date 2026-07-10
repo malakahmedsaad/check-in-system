@@ -1,3 +1,5 @@
+// Purpose: Reads the auth cookie, verifies the JWT, and loads the current user from Prisma.
+
 import { cookies } from "next/headers";
 
 import { verifyToken } from "./auth";

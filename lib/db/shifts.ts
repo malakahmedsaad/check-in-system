@@ -1,3 +1,5 @@
+// Purpose: Provides mentor shift data access and shift state transition helpers.
+
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "../prisma";

@@ -1,3 +1,5 @@
+// Purpose: Provides the shared Prisma client singleton.
+
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };

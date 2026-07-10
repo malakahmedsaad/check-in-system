@@ -1,3 +1,5 @@
+// Purpose: Centralizes app timezone and date range helpers.
+
 export const APP_TIME_ZONE = "America/Indiana/Indianapolis";
 
 const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", {

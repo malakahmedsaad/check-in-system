@@ -1,3 +1,5 @@
+// Purpose: Provides student booking and check-in data access helpers.
+
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../prisma";

@@ -1,3 +1,5 @@
+// Purpose: Signs and verifies JWT authentication tokens.
+
 import { SignJWT, jwtVerify } from "jose";
 
 export type AuthTokenPayload = {

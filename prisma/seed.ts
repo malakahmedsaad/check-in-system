@@ -1,3 +1,5 @@
+// Purpose: Seeds local development data for users, kiosk state, bookings, and shifts.
+
 import { BookingStatus, MentorType, PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
