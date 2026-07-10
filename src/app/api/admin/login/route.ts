@@ -1,3 +1,5 @@
+// Purpose: Authenticates admins with email plus PIN and issues an auth cookie.
+
 import { NextResponse } from "next/server";
 
 import { verifyAdminPin } from "../../../../../lib/admin-pin";

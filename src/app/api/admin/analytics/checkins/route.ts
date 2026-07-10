@@ -1,3 +1,5 @@
+// Purpose: Returns bucketed check-in analytics for admin charts.
+
 import { NextResponse } from "next/server";
 
 import {

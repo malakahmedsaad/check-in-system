@@ -1,3 +1,5 @@
+// Purpose: Returns confirmed bookings for the signed-in student.
+
 import { NextResponse } from "next/server";
 
 import { getBookingsByStudentId } from "../../../../lib/db/bookings";

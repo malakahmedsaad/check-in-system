@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the public landing/status page and links users into the right check-in flow.
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 

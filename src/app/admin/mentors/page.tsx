@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders admin mentor summaries, total hours, appointments, and shift history.
+
 import type { Prisma } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 

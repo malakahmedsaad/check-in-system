@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the admin email and PIN sign-in form.
+
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 

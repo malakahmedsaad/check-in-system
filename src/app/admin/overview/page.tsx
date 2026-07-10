@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the admin overview dashboard with activity counts, charts, and recent shifts.
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Bar,

@@ -1,3 +1,5 @@
+// Purpose: Returns today's appointments for the signed-in mentor.
+
 import { NextResponse } from "next/server";
 
 import { getAppDayRange } from "../../../../../lib/date-time";

@@ -1,3 +1,5 @@
+// Purpose: Starts non-admin sign-in by creating and emailing a magic link.
+
 import { NextResponse } from "next/server";
 
 import { sendMagicLinkEmail } from "../../../../../lib/email";

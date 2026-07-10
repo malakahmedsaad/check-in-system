@@ -1,3 +1,5 @@
+// Purpose: Updates the admin PIN after verifying the current PIN.
+
 import { NextResponse } from "next/server";
 
 import { updateAdminPin, verifyAdminPin } from "../../../../../../lib/admin-pin";

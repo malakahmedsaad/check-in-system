@@ -1,3 +1,5 @@
+// Purpose: Clears the auth cookie to sign out the current user.
+
 import { NextResponse } from "next/server";
 
 export async function POST() {

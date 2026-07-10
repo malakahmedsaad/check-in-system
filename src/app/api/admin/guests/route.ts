@@ -1,3 +1,5 @@
+// Purpose: Returns admin guest visit records, optionally filtered by app-local date.
+
 import { NextResponse } from "next/server";
 
 import { addDays, startOfAppDay } from "../../../../../lib/date-time";

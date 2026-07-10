@@ -1,3 +1,5 @@
+// Purpose: Returns recent mentor shifts for admin analytics tables.
+
 import { NextResponse } from "next/server";
 
 import { prisma } from "../../../../../../lib/prisma";

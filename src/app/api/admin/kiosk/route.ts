@@ -1,3 +1,5 @@
+// Purpose: Returns and updates the singleton kiosk open/closed status.
+
 import { NextResponse } from "next/server";
 
 import { verifyAdminPin } from "../../../../../lib/admin-pin";

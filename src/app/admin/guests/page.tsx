@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders admin guest visit history and date filtering.
+
 import { useEffect, useState } from "react";
 
 import { useUser } from "../../../../context/UserContext";

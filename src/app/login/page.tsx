@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the magic-link sign-in page for students and mentors.
+
 import { FormEvent, useState } from "react";
 
 export default function LoginPage() {

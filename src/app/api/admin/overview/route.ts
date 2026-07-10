@@ -1,3 +1,5 @@
+// Purpose: Returns admin overview counts for guests, student check-ins, and active mentors.
+
 import { NextResponse } from "next/server";
 
 import { getAppDayRange } from "../../../../../lib/date-time";

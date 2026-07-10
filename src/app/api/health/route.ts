@@ -1,3 +1,5 @@
+// Purpose: Exposes a health check endpoint that verifies API and database availability.
+
 import { NextResponse } from "next/server";
 
 export async function GET() {

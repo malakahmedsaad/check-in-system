@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders admin kiosk controls for opening and closing check-ins.
+
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 

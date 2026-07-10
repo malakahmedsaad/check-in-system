@@ -1,3 +1,5 @@
+// Purpose: Returns the current authenticated user session.
+
 import { NextResponse } from "next/server";
 
 import { getSession } from "../../../../../lib/get-session";

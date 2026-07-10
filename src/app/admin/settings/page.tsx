@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders admin settings for changing the shared admin PIN.
+
 import { FormEvent, useRef, useState } from "react";
 
 import { useUser } from "../../../../context/UserContext";

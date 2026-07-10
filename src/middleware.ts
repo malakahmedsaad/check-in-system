@@ -1,3 +1,5 @@
+// Purpose: Protects authenticated app sections and redirects unauthenticated or wrong-role users.
+
 import { NextResponse, type NextRequest } from "next/server";
 
 import { verifyToken } from "../lib/auth";

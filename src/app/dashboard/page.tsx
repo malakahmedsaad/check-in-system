@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the student dashboard for kiosk status, bookings, and check-ins.
+
 import { useEffect, useRef, useState } from "react";
 
 import { useUser } from "../../../context/UserContext";

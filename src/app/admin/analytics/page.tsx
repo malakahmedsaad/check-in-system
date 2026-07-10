@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders detailed admin check-in charts and mentor timesheet analytics.
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {

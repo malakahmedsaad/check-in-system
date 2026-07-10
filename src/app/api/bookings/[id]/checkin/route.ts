@@ -1,3 +1,5 @@
+// Purpose: Checks a student into a booking and sends a non-blocking notification email.
+
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 

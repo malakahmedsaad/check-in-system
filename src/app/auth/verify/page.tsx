@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Verifies magic-link tokens and redirects signed-in users to their dashboard.
+
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";

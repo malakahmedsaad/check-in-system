@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders admin student records and booking/check-in history.
+
 import type { Prisma } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 

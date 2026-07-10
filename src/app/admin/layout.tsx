@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Provides admin navigation and the client-side admin access gate.
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

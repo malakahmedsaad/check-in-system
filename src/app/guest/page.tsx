@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the public guest check-in form.
+
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 

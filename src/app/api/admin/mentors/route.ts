@@ -1,3 +1,5 @@
+// Purpose: Returns admin mentor summaries with appointments, total hours, and recent shifts.
+
 import { NextResponse } from "next/server";
 
 import { getAppDayRange } from "../../../../../lib/date-time";

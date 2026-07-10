@@ -1,5 +1,7 @@
 "use client";
 
+// Purpose: Renders the mentor dashboard for appointments, shift controls, and timesheet totals.
+
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 

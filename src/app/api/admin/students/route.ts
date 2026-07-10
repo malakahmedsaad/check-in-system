@@ -1,3 +1,5 @@
+// Purpose: Returns admin student records with booking and check-in history.
+
 import { NextResponse } from "next/server";
 
 import { prisma } from "../../../../../lib/prisma";

@@ -1,3 +1,5 @@
+// Purpose: Returns mentor shift status and handles mentor clock-in/clock-out actions.
+
 import { NextResponse } from "next/server";
 
 import {

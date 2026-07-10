@@ -1,3 +1,5 @@
+// Purpose: Redeems magic-link tokens and creates authenticated sessions for students or mentors.
+
 import { NextResponse } from "next/server";
 
 import { signToken } from "../../../../../lib/auth";
