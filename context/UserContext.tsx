@@ -37,7 +37,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     async function restoreSession() {
-      const response = await fetch("/api/auth/me");
+      const response = await fetch("/api/auth/me", {
+        cache: "no-store",
+      });
 
       if (!isMounted) {
         return;
@@ -73,6 +75,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
+        cache: "no-store",
       });
     } finally {
       setUser(null);

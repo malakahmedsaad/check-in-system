@@ -124,6 +124,7 @@ export default function MentorPage() {
 
   async function loadShiftStatus() {
     const response = await fetch("/api/mentor/shift", {
+      cache: "no-store",
       credentials: "include",
     });
 
@@ -160,6 +161,7 @@ export default function MentorPage() {
     async function loadInitialShiftStatus() {
       try {
         const response = await fetch("/api/mentor/shift", {
+          cache: "no-store",
           credentials: "include",
         });
 
@@ -210,6 +212,7 @@ export default function MentorPage() {
     async function loadAppointments() {
       try {
         const response = await fetch("/api/mentor/appointments", {
+          cache: "no-store",
           credentials: "include",
         });
 
@@ -272,6 +275,7 @@ export default function MentorPage() {
           "Content-Type": "application/json",
         },
         credentials: "include",
+        cache: "no-store",
         body: JSON.stringify({
           action: isClockedIn ? "clock_out" : "clock_in",
         }),

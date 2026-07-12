@@ -6,11 +6,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
+import { useUser } from "../../../../context/UserContext";
+
 type VerifyState = "loading" | "error";
 
 function VerifyMagicLink() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setAuthenticatedUser } = useUser();
   const [state, setState] = useState<VerifyState>("loading");
 
   useEffect(() => {
@@ -34,6 +37,8 @@ function VerifyMagicLink() {
 
         const data = (await response.json().catch(() => null)) as {
           user?: {
+            name: string;
+            email: string;
             role: string;
           };
         } | null;
@@ -46,6 +51,7 @@ function VerifyMagicLink() {
           return;
         }
 
+        setAuthenticatedUser(data.user);
         router.replace(data.user.role === "mentor" ? "/mentor" : "/dashboard");
       } catch {
         if (isMounted) {
@@ -59,7 +65,7 @@ function VerifyMagicLink() {
     return () => {
       isMounted = false;
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, setAuthenticatedUser]);
 
   if (state === "error") {
     return (
