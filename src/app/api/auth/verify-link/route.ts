@@ -1,37 +1,60 @@
-// Purpose: Redeems magic-link tokens and creates authenticated sessions for students or mentors.
+// Purpose: Verifies OTP codes and creates authenticated sessions for students or mentors.
 
 import { NextResponse } from "next/server";
 
 import { signToken } from "../../../../../lib/auth";
-import { verifyMagicLinkToken } from "../../../../../lib/magic-link";
+import { verifyOtp } from "../../../../../lib/otp";
 import { prisma } from "../../../../../lib/prisma";
 
 export async function POST(request: Request) {
-  let body: { token?: unknown };
+  let body: { email?: unknown; code?: unknown };
 
   try {
-    body = (await request.json()) as { token?: unknown };
+    body = (await request.json()) as { email?: unknown; code?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const token = typeof body.token === "string" ? body.token.trim() : "";
-  const verification = await verifyMagicLinkToken(token);
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const code = typeof body.code === "string" ? body.code.trim() : "";
 
-  if (!verification) {
+  if (!email || !code) {
     return NextResponse.json(
-      { error: "This link is invalid or has expired" },
+      { error: "Email and code are required" },
+      { status: 400 },
+    );
+  }
+
+  const verification = await verifyOtp(email, code);
+
+  if (verification === "locked") {
+    return NextResponse.json(
+      { error: "Too many incorrect attempts. Request a new code." },
+      { status: 423 },
+    );
+  }
+
+  if (verification === "expired") {
+    return NextResponse.json(
+      { error: "This code has expired. Request a new code." },
+      { status: 401 },
+    );
+  }
+
+  if (verification !== "valid") {
+    return NextResponse.json(
+      { error: "This code is invalid" },
       { status: 401 },
     );
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: verification.email },
+    where: { email },
   });
 
   if (!user || user.role === "admin") {
     return NextResponse.json(
-      { error: "This link is invalid or has expired" },
+      { error: "This code is invalid" },
       { status: 401 },
     );
   }

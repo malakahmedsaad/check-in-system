@@ -1,9 +1,9 @@
-// Purpose: Starts non-admin sign-in by creating and emailing a magic link.
+// Purpose: Starts non-admin sign-in by creating and emailing an OTP code.
 
 import { NextResponse } from "next/server";
 
-import { sendMagicLinkEmail } from "../../../../../lib/email";
-import { generateMagicLinkToken } from "../../../../../lib/magic-link";
+import { sendOtpEmail } from "../../../../../lib/email";
+import { generateOtp } from "../../../../../lib/otp";
 import { prisma } from "../../../../../lib/prisma";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,22 +48,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = await generateMagicLinkToken(email);
-  const clientUrl = process.env.CLIENT_URL ?? new URL(request.url).origin;
-  const link = `${clientUrl}/auth/verify?token=${token}`;
+  const code = await generateOtp(email);
 
   try {
-    await sendMagicLinkEmail({
+    await sendOtpEmail({
       to: user.email,
       name: user.name,
-      link,
+      code,
     });
   } catch (error) {
-    console.error("Magic link email failed:", error);
+    console.error("OTP email failed:", error);
   }
 
   return NextResponse.json({
     success: true,
-    message: "Check your email for a sign-in link",
+    message: "Check your email for a sign-in code",
   });
 }

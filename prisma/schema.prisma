@@ -40,15 +40,20 @@ model User {
   shifts            Shift[]
 }
 
-// A token is created when someone requests a login link, emailed to them, and marked usedAt when redeemed.
-// Tokens expire 15 minutes after creation and can only be used once.
-model MagicLinkToken {
+// code is a 4-digit numeric string (e.g. "3847").
+// expiresAt is 10 minutes from creation.
+// usedAt is set when the code is successfully verified — a code can only be used once.
+// attempts tracks how many times a wrong code was entered — lock out after 5 failed attempts to prevent brute force.
+model OtpCode {
   id        String    @id @default(cuid())
   email     String
-  token     String    @unique
+  code      String
   expiresAt DateTime
   usedAt    DateTime?
+  attempts  Int       @default(0)
   createdAt DateTime  @default(now())
+
+  @@index([email])
 }
 
 // Guests are never created as User records; this standalone log table is separate from authenticated User/Booking/Checkin flows.

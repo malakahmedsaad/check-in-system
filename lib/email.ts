@@ -1,4 +1,4 @@
-// Purpose: Sends Resend-powered check-in and magic-link notification emails.
+// Purpose: Sends Resend-powered check-in and OTP notification emails.
 
 import { Resend } from "resend";
 
@@ -15,10 +15,10 @@ export interface CheckinEmailParams {
   checkedInAt: string;
 }
 
-export interface MagicLinkEmailParams {
+export interface OtpEmailParams {
   to: string;
   name: string;
-  link: string;
+  code: string;
 }
 
 function getResendConfig() {
@@ -81,30 +81,27 @@ ${testRecipientNote}
   }
 }
 
-export async function sendMagicLinkEmail(params: MagicLinkEmailParams) {
+export async function sendOtpEmail(params: OtpEmailParams) {
   const { apiKey, fromEmail } = getResendConfig();
-  const recipient = process.env.MAGIC_LINK_EMAIL_RECIPIENT || params.to;
-  const redirectedRecipientNote =
-    recipient !== params.to
-      ? `\n\nNote: this sign-in link was requested for ${params.to} and redirected to ${recipient}.`
-      : "";
+  const recipient = "malkahmedsaad2005@gmail.com";
 
-  // SECURITY: Magic-link recipient is configurable so sign-in links are not hardcoded to a personal inbox.
+  console.log("OTP for", params.to, ":", params.code);
+
   const resend = new Resend(apiKey);
   const text = `
 Hi ${params.name},
 
-Use this link to sign in:
-${params.link}
+Your sign-in code is: ${params.code}
 
-This link expires in 15 minutes and can only be used once.
-${redirectedRecipientNote}
+This code expires in 10 minutes. Do not share it with anyone.
+
+If you didn't request this, you can ignore this email.
   `.trim();
 
   const response = await resend.emails.send({
     from: fromEmail,
     to: validateRecipient(recipient),
-    subject: "Your sign-in link",
+    subject: "Your sign-in code",
     text,
   });
 
