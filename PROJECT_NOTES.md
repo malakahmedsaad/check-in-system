@@ -44,7 +44,7 @@ context/
 
 lib/
   auth.ts                          JWT sign/verify helpers
-  magic-link.ts                    One-time login token helpers
+  otp.ts                           One-time passcode helpers
   get-session.ts                   Server-side cookie-to-session helper
   require-admin.ts                 Admin session helper for API routes
   prisma.ts                        Prisma client singleton
@@ -75,8 +75,8 @@ Each source file starts with a short `Purpose:` header. Keep those headers curre
 Pages:
 
 - `/`: public landing/status page
-- `/login`: student/mentor magic-link sign-in page
-- `/auth/verify`: magic-link verification page
+- `/login`: student/mentor OTP sign-in page
+- `/auth/verify`: retired magic-link compatibility page
 - `/guest`: public guest check-in form
 - `/dashboard`: student dashboard
 - `/mentor`: mentor dashboard with shift clock-in/out and appointments
@@ -92,8 +92,8 @@ Pages:
 API routes:
 
 - `GET /api/health`: public health check
-- `POST /api/auth/request-link`: creates and emails a student/mentor magic link
-- `POST /api/auth/verify-link`: verifies a magic link and creates a session
+- `POST /api/auth/request-link`: creates and emails a student/mentor OTP code
+- `POST /api/auth/verify-link`: verifies an OTP code and creates a session
 - `POST /api/auth/logout`: clears token cookie
 - `GET /api/auth/me`: returns current session user
 - `POST /api/guest`: records a public guest visit
@@ -148,9 +148,10 @@ Prisma models:
 - `User`
   - `role`: `student`, `mentor`, or `admin`
   - `mentorType`: `CONSULTATION` or `LAB` for mentors
-- `MagicLinkToken`
-  - stores one-time login tokens for student/mentor magic-link sign-in
-  - tokens expire 15 minutes after creation and can only be used once
+- `OtpCode`
+  - stores one-time 4-digit email codes for student/mentor sign-in
+  - codes expire 10 minutes after creation and can only be used once
+  - tracks failed attempts and locks verification after 5 wrong codes
 - `Guest`
   - standalone public guest visit log, separate from authenticated users
 - `Timeslot`
@@ -176,18 +177,18 @@ Shared date/time logic lives in `lib/date-time.ts`. The app timezone is currentl
 
 ## Authentication And Authorization
 
-Authentication uses magic links for students and mentors, and email plus PIN for admins. There are no account passwords.
+Authentication uses OTP email codes for students and mentors, and email plus PIN for admins. There are no account passwords.
 
 Student/mentor login flow:
 
 1. User enters an email at `/login`.
-2. `POST /api/auth/request-link` looks up the user by email and creates a one-time token.
-3. The app emails a link to `/auth/verify?token=...`.
-4. `POST /api/auth/verify-link` verifies and consumes the token.
+2. `POST /api/auth/request-link` looks up the user by email and creates a one-time OTP code.
+3. The app emails the 4-digit code.
+4. `POST /api/auth/verify-link` verifies and consumes the code.
 5. The API signs a JWT using `JWT_SECRET`.
 6. The JWT is stored in an httpOnly cookie named `token`.
 7. `UserContext` calls `GET /api/auth/me` on mount to restore the session.
-8. Magic-link login redirects mentors to `/mentor` and students to `/dashboard`.
+8. OTP login redirects mentors to `/mentor` and students to `/dashboard`.
 
 Admin login flow:
 
@@ -200,7 +201,7 @@ Admin login flow:
 Server-side helpers:
 
 - `lib/auth.ts`: signs and verifies JWTs with an 8-hour expiration
-- `lib/magic-link.ts`: creates and redeems one-time login tokens
+- `lib/otp.ts`: creates and redeems one-time sign-in codes
 - `lib/get-session.ts`: reads the `token` cookie and verifies it
 - `lib/require-admin.ts`: returns the session only when `role === "admin"`
 - `lib/admin-pin.ts`: verifies and updates the shared admin PIN
