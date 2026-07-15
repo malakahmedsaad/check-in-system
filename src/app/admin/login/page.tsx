@@ -95,7 +95,7 @@ export default function AdminLoginPage() {
               id="email"
               name="email"
               type="email"
-              placeholder="staff@os4.edu"
+              placeholder="staff@purdue.edu"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required

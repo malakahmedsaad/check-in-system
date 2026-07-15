@@ -9,6 +9,7 @@ import { useUser } from "../../../context/UserContext";
 
 const navItems = [
   { href: "/admin/overview", label: "Overview" },
+  { href: "/admin/checkin", label: "Check-in" },
   { href: "/admin/kiosk", label: "Kiosk" },
   { href: "/admin/guests", label: "Guests" },
   { href: "/admin/students", label: "Students" },
