@@ -1,0 +1,51 @@
+// Purpose: Lists mentor shift history or the latest shift status for every mentor.
+
+import { NextResponse } from "next/server";
+
+import { getAllMentorsWithShiftStatus } from "../../../../../lib/db/shifts";
+import { prisma } from "../../../../../lib/prisma";
+import { requireAdmin } from "../../../../../lib/require-admin";
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireAdmin();
+
+    if (!session) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const mentorId = new URL(request.url).searchParams.get("mentorId");
+
+    if (mentorId) {
+      const shifts = await prisma.shift.findMany({
+        where: {
+          mentorId,
+        },
+        orderBy: {
+          clockInAt: "desc",
+        },
+        take: 50,
+        include: {
+          mentor: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(shifts);
+    }
+
+    const mentors = await getAllMentorsWithShiftStatus();
+
+    return NextResponse.json(mentors);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

@@ -5,6 +5,24 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma";
 
 export type ShiftRecord = Prisma.ShiftGetPayload<Record<string, never>>;
+export type ShiftWithMentor = Prisma.ShiftGetPayload<{
+  include: {
+    mentor: {
+      select: {
+        name: true;
+        email: true;
+      };
+    };
+  };
+}>;
+export type MentorWithShiftStatus = {
+  id: string;
+  name: string;
+  email: string;
+  mentorType: "CONSULTATION" | "LAB" | null;
+  mostRecentShift: ShiftRecord | null;
+  isClockedIn: boolean;
+};
 
 export class ShiftStateError extends Error {
   constructor(message: string) {
@@ -23,6 +41,82 @@ export async function getActiveShift(
     },
     orderBy: {
       clockInAt: "desc",
+    },
+  });
+}
+
+export async function getActiveShiftForMentor(
+  mentorId: string,
+): Promise<ShiftWithMentor | null> {
+  return prisma.shift.findFirst({
+    where: {
+      mentorId,
+      clockOutAt: null,
+    },
+    orderBy: {
+      clockInAt: "desc",
+    },
+    include: {
+      mentor: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+}
+
+export async function getAllMentorsWithShiftStatus(): Promise<
+  MentorWithShiftStatus[]
+> {
+  const mentors = await prisma.user.findMany({
+    where: {
+      role: "mentor",
+    },
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      mentorType: true,
+      shifts: {
+        take: 1,
+        orderBy: {
+          clockInAt: "desc",
+        },
+      },
+    },
+  });
+
+  return mentors.map(({ shifts, ...mentor }) => {
+    const mostRecentShift = shifts[0] ?? null;
+
+    return {
+      ...mentor,
+      mostRecentShift,
+      isClockedIn:
+        mostRecentShift !== null && mostRecentShift.clockOutAt === null,
+    };
+  });
+}
+
+export async function getShiftById(
+  id: string,
+): Promise<ShiftWithMentor | null> {
+  return prisma.shift.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      mentor: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
     },
   });
 }
