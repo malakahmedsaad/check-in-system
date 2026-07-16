@@ -107,6 +107,7 @@ export async function POST(request: Request) {
 
     let checkin;
 
+    // Admin override: no time window restriction applied here
     try {
       checkin = await prisma.checkin.create({ data: { bookingId } });
     } catch (error) {

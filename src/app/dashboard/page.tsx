@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useUser } from "../../../context/UserContext";
+import { computeCheckinWindow } from "../../../lib/checkin-window";
 import type { BookingWithStudentSummary } from "../../../lib/db/bookings";
 import { APP_TIME_ZONE } from "../../../lib/date-time";
 
@@ -98,6 +99,7 @@ export default function DashboardPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [checkInErrors, setCheckInErrors] = useState<Record<string, string>>({});
+  const [lastUpdated, setLastUpdated] = useState(() => Date.now());
   const inFlightCheckins = useRef(new Set<string>());
 
   const todayDate = new Date().toDateString();
@@ -186,6 +188,15 @@ export default function DashboardPage() {
     };
   }, [logout]);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(
+      () => setLastUpdated(Date.now()),
+      60_000,
+    );
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   async function handleCheckIn(bookingId: string) {
     if (inFlightCheckins.current.has(bookingId)) {
       return;
@@ -208,9 +219,10 @@ export default function DashboardPage() {
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as {
           error?: string;
+          message?: string;
         } | null;
 
-        throw new Error(data?.error ?? "Check-in failed");
+        throw new Error(data?.message ?? data?.error ?? "Check-in failed");
       }
 
       const checkin = (await response.json()) as Checkin;
@@ -354,12 +366,21 @@ export default function DashboardPage() {
               ) : null}
 
               {!isLoading && bookings.length > 0 ? (
-                <div className="space-y-3">
+                <div
+                  className="space-y-3"
+                  data-window-updated-at={lastUpdated}
+                >
                   {bookings.map((booking) => {
                     const isCheckingIn = checkingInId === booking.id;
                     const appointmentDate = new Date(booking.timeslot.date);
                     const startTime = new Date(booking.timeslot.startTime);
                     const endTime = new Date(booking.timeslot.endTime);
+                    const {
+                      windowOpen,
+                      isOpen,
+                      tooEarly,
+                      tooLate,
+                    } = computeCheckinWindow(startTime);
 
                     return (
                       <article
@@ -389,6 +410,46 @@ export default function DashboardPage() {
                                 {timeFormatter.format(startTime)} –{" "}
                                 {timeFormatter.format(endTime)}
                               </p>
+                              {!booking.checkin && tooEarly ? (
+                                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                                  <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    className="h-4 w-4"
+                                  >
+                                    <circle cx="12" cy="12" r="9" />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M12 7v5l3 2"
+                                    />
+                                  </svg>
+                                  Check-in opens at{" "}
+                                  {timeFormatter.format(windowOpen)}
+                                </p>
+                              ) : null}
+                              {!booking.checkin && tooLate ? (
+                                <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+                                  <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    className="h-4 w-4"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M12 9v4m0 4h.01M10.29 3.86 2.82 17a2 2 0 0 0 1.74 3h14.88a2 2 0 0 0 1.74-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+                                    />
+                                  </svg>
+                                  Check-in window has closed
+                                </p>
+                              ) : null}
                             </div>
                           </div>
 
@@ -403,7 +464,12 @@ export default function DashboardPage() {
                               {booking.checkin ? "Checked in" : "Confirmed"}
                             </span>
 
-                            {!booking.checkin ? (
+                            {!booking.checkin && isOpen ? (
+                              <>
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  Open now
+                                </span>
                               <button
                                 type="button"
                                 onClick={() => handleCheckIn(booking.id)}
@@ -412,6 +478,7 @@ export default function DashboardPage() {
                               >
                                 {isCheckingIn ? "Checking in..." : "Check In"}
                               </button>
+                              </>
                             ) : null}
                           </div>
                         </div>

@@ -7,6 +7,7 @@ import {
   checkInToBooking,
   getBookingById,
 } from "../../../../../../lib/db/bookings";
+import { computeCheckinWindow } from "../../../../../../lib/checkin-window";
 import { sendCheckinNotification } from "../../../../../../lib/email";
 import { getSession } from "../../../../../../lib/get-session";
 import { prisma } from "../../../../../../lib/prisma";
@@ -85,6 +86,37 @@ export async function POST(_request: Request, context: RouteContext) {
     if (booking.status !== "CONFIRMED") {
       return NextResponse.json(
         { error: "Booking is not confirmed" },
+        { status: 400 },
+      );
+    }
+
+    const { windowOpen, tooEarly, tooLate } = computeCheckinWindow(
+      new Date(booking.timeslot.startTime),
+    );
+
+    if (tooEarly) {
+      const formattedWindowOpen = windowOpen.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+
+      return NextResponse.json(
+        {
+          error: "Too early to check in",
+          message: `Check-in opens 15 minutes before your appointment. Come back at ${formattedWindowOpen}.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (tooLate) {
+      return NextResponse.json(
+        {
+          error: "Check-in window has passed",
+          message:
+            "The check-in window for this appointment has closed. Please speak with front desk staff.",
+        },
         { status: 400 },
       );
     }

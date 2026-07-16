@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useUser } from "../../../../context/UserContext";
+import { computeCheckinWindow } from "../../../../lib/checkin-window";
 import { APP_TIME_ZONE } from "../../../../lib/date-time";
 
 type Checkin = { id: string; bookingId: string; checkedInAt: string };
@@ -43,6 +44,7 @@ export default function AdminCheckinPage() {
   const [loadError, setLoadError] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [lastUpdated, setLastUpdated] = useState(() => Date.now());
 
   useEffect(() => {
     let isMounted = true;
@@ -77,6 +79,15 @@ export default function AdminCheckinPage() {
       isMounted = false;
     };
   }, [logout]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(
+      () => setLastUpdated(Date.now()),
+      60_000,
+    );
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const filteredBookings = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -193,8 +204,16 @@ export default function AdminCheckinPage() {
                   <th className="px-5 py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredBookings.map((booking) => (
+              <tbody
+                className="divide-y divide-slate-100"
+                data-window-updated-at={lastUpdated}
+              >
+                {filteredBookings.map((booking) => {
+                  const { tooLate } = computeCheckinWindow(
+                    new Date(booking.timeslot.startTime),
+                  );
+
+                  return (
                   <tr key={booking.id} className="align-middle">
                     <td className="px-5 py-4">
                       <p className="font-semibold text-slate-900">{booking.student.name}</p>
@@ -216,7 +235,14 @@ export default function AdminCheckinPage() {
                           <p className="mt-1 text-xs text-slate-500">{timeFormatter.format(new Date(booking.checkin.checkedInAt))}</p>
                         </>
                       ) : (
-                        <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Not arrived</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Not arrived</span>
+                          {tooLate ? (
+                            <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-300">
+                              Window closed
+                            </span>
+                          ) : null}
+                        </div>
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">
@@ -230,7 +256,8 @@ export default function AdminCheckinPage() {
                       ) : null}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
