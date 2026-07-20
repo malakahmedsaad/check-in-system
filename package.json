@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate:os4": "prisma generate --schema=prisma-os4/schema.prisma",
+    "prisma:generate:all": "prisma generate && npm run prisma:generate:os4"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

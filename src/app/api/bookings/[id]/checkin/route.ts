@@ -41,8 +41,6 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
-const cuidPattern = /^c[a-z0-9]{20,32}$/i;
-
 export async function POST(_request: Request, context: RouteContext) {
   try {
     const session = await getSession();
@@ -62,17 +60,18 @@ export async function POST(_request: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
-    if (!cuidPattern.test(id)) {
+    const bookingId = Number(id);
+    if (!Number.isInteger(bookingId) || bookingId <= 0) {
       return NextResponse.json({ error: "Invalid booking id" }, { status: 400 });
     }
 
-    const booking = await getBookingById(id);
+    const booking = await getBookingById(bookingId);
 
     if (!booking) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    if (booking.studentId !== session.userId) {
+    if (booking.userId !== session.userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -91,7 +90,7 @@ export async function POST(_request: Request, context: RouteContext) {
     }
 
     const { windowOpen, tooEarly, tooLate } = computeCheckinWindow(
-      new Date(booking.timeslot.startTime),
+      booking.startDate,
     );
 
     if (tooEarly) {
@@ -124,7 +123,7 @@ export async function POST(_request: Request, context: RouteContext) {
     let checkin;
 
     try {
-      checkin = await checkInToBooking(id);
+      checkin = await checkInToBooking(bookingId);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -144,10 +143,9 @@ export async function POST(_request: Request, context: RouteContext) {
         mentorEmail: booking.mentor.email,
         mentorName: booking.mentor.name,
         studentName: booking.student.name,
-        mentorType: booking.mentor.mentorType ?? "CONSULTATION",
         bookingDate: dateFormatter.format(booking.timeslot.date),
-        startTime: timeFormatter.format(booking.timeslot.startTime),
-        endTime: timeFormatter.format(booking.timeslot.endTime),
+        startTime: booking.timeslot.startTime,
+        endTime: booking.timeslot.endTime,
         checkedInAt: dateTimeFormatter.format(checkin.checkedInAt),
       });
     } catch (error) {

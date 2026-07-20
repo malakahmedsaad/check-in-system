@@ -9,11 +9,9 @@ import { computeCheckinWindow } from "../../../lib/checkin-window";
 import type { BookingWithStudentSummary } from "../../../lib/db/bookings";
 import { APP_TIME_ZONE } from "../../../lib/date-time";
 
-type MentorType = "CONSULTATION" | "LAB" | null;
-
 type Checkin = {
   id: string;
-  bookingId: string;
+  bookingId: number;
   checkedInAt: string;
 };
 
@@ -47,14 +45,6 @@ const timeFormatter = new Intl.DateTimeFormat("en-US", {
   hour: "numeric",
   minute: "2-digit",
 });
-
-function formatMentorType(mentorType: MentorType) {
-  if (mentorType === "LAB") {
-    return "Lab";
-  }
-
-  return "Consultation";
-}
 
 function getInitials(name: string) {
   return name
@@ -97,10 +87,10 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [kioskStatus, setKioskStatus] = useState<KioskStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [checkingInId, setCheckingInId] = useState<string | null>(null);
+  const [checkingInId, setCheckingInId] = useState<number | null>(null);
   const [checkInErrors, setCheckInErrors] = useState<Record<string, string>>({});
   const [lastUpdated, setLastUpdated] = useState(() => Date.now());
-  const inFlightCheckins = useRef(new Set<string>());
+  const inFlightCheckins = useRef(new Set<number>());
 
   const todayDate = new Date().toDateString();
   const checkedInTodayCount = bookings.filter(
@@ -109,9 +99,7 @@ export default function DashboardPage() {
       new Date(booking.checkin.checkedInAt).toDateString() === todayDate,
   ).length;
   const nextOpenBooking = bookings.find((booking) => !booking.checkin);
-  const nextAppointmentTime = nextOpenBooking
-    ? timeFormatter.format(new Date(nextOpenBooking.timeslot.startTime))
-    : "None";
+  const nextAppointmentTime = nextOpenBooking?.timeslot.startTime ?? "None";
 
   useEffect(() => {
     let isMounted = true;
@@ -197,7 +185,7 @@ export default function DashboardPage() {
     return () => clearInterval(intervalId);
   }, []);
 
-  async function handleCheckIn(bookingId: string) {
+  async function handleCheckIn(bookingId: number) {
     if (inFlightCheckins.current.has(bookingId)) {
       return;
     }
@@ -373,14 +361,12 @@ export default function DashboardPage() {
                   {bookings.map((booking) => {
                     const isCheckingIn = checkingInId === booking.id;
                     const appointmentDate = new Date(booking.timeslot.date);
-                    const startTime = new Date(booking.timeslot.startTime);
-                    const endTime = new Date(booking.timeslot.endTime);
                     const {
                       windowOpen,
                       isOpen,
                       tooEarly,
                       tooLate,
-                    } = computeCheckinWindow(startTime);
+                    } = computeCheckinWindow(new Date(booking.startDate));
 
                     return (
                       <article
@@ -398,17 +384,14 @@ export default function DashboardPage() {
                                 <h2 className="text-base font-semibold text-slate-950">
                                   {booking.mentor.name}
                                 </h2>
-                                <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-100">
-                                  {formatMentorType(booking.mentor.mentorType)}
-                                </span>
                               </div>
 
                               <p className="mt-2 text-sm font-medium text-slate-700">
                                 {dateFormatter.format(appointmentDate)}
                               </p>
                               <p className="mt-1 text-sm text-slate-500">
-                                {timeFormatter.format(startTime)} –{" "}
-                                {timeFormatter.format(endTime)}
+                                {booking.timeslot.startTime} –{" "}
+                                {booking.timeslot.endTime}
                               </p>
                               {!booking.checkin && tooEarly ? (
                                 <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">

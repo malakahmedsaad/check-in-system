@@ -3,7 +3,7 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export type AuthTokenPayload = {
-  userId: string;
+  userId: number;
   email: string;
   role: string;
   name: string;
@@ -35,7 +35,7 @@ function isAuthTokenClaims(payload: unknown): payload is AuthTokenPayload {
   const candidate = payload as Record<string, unknown>;
 
   return (
-    typeof candidate.userId === "string" &&
+    typeof candidate.userId === "number" &&
     typeof candidate.email === "string" &&
     typeof candidate.role === "string" &&
     validRoles.has(candidate.role) &&

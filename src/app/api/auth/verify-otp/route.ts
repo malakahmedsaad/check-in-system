@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 import { signToken } from "../../../../../lib/auth";
 import { verifyOtp } from "../../../../../lib/otp";
-import { prisma } from "../../../../../lib/prisma";
+import { os4Prisma } from "../../../../../lib/os4-prisma";
+import { isAdmin, translateRole } from "../../../../../lib/os4-role";
 
 export async function POST(request: Request) {
   try {
@@ -45,9 +46,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await os4Prisma.user.findUnique({ where: { email } });
 
-    if (!user || user.role === "admin") {
+    if (!user || isAdmin(user.role)) {
       return NextResponse.json(
         { error: "Incorrect code. Please try again." },
         { status: 401 },
@@ -57,11 +58,11 @@ export async function POST(request: Request) {
     const token = await signToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: translateRole(user.role),
       name: user.name,
     });
     const response = NextResponse.json({
-      user: { name: user.name, email: user.email, role: user.role },
+      user: { name: user.name, email: user.email, role: translateRole(user.role) },
     });
 
     response.cookies.set("token", token, {

@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "../../../../../../lib/prisma";
+import { os4Prisma } from "../../../../../../lib/os4-prisma";
 import { requireAdmin } from "../../../../../../lib/require-admin";
 
 export async function GET() {
@@ -18,14 +19,12 @@ export async function GET() {
       orderBy: {
         clockInAt: "desc",
       },
-      include: {
-        mentor: {
-          select: {
-            name: true,
-          },
-        },
-      },
     });
+    const mentors = await os4Prisma.user.findMany({
+      where: { id: { in: shifts.map((shift) => shift.mentorId) } },
+      select: { id: true, name: true },
+    });
+    const mentorNames = new Map(mentors.map((mentor) => [mentor.id, mentor.name]));
 
     return NextResponse.json(
       shifts.map((shift) => {
@@ -36,7 +35,7 @@ export async function GET() {
 
         return {
           id: shift.id,
-          mentorName: shift.mentor.name,
+          mentorName: mentorNames.get(shift.mentorId) ?? "Unknown mentor",
           clockInAt: shift.clockInAt,
           clockOutAt: shift.clockOutAt,
           durationHours,

@@ -1,91 +1,155 @@
-// Purpose: Provides student booking and check-in data access helpers.
+// Purpose: Provides student booking and check-in data access across OS4 and kiosk databases.
 
-import type { Prisma } from "@prisma/client";
+import type { Checkin } from "@prisma/client";
 
+import { os4Prisma } from "../os4-prisma";
 import { prisma } from "../prisma";
 
-export type BookingWithStudentSummary = Prisma.BookingGetPayload<{
-  include: {
-    timeslot: {
-      select: {
-        date: true;
-        startTime: true;
-        endTime: true;
-      };
-    };
-    mentor: {
-      select: {
-        name: true;
-        email: true;
-        mentorType: true;
-      };
-    };
-    checkin: true;
+type BookingRelations = {
+  student: { id: number; name: string; email: string };
+  mentor: { id: number; name: string; email: string };
+  timeslot: {
+    id: number;
+    date: Date;
+    startTime: string;
+    endTime: string;
   };
-}>;
+  checkin: Checkin | null;
+};
 
-export type BookingDetails = Prisma.BookingGetPayload<{
-  include: {
-    timeslot: true;
-    mentor: true;
-    student: true;
-    checkin: true;
-  };
-}>;
+export type BookingWithStudentSummary = {
+  id: number;
+  userId: number;
+  labMentorId: number;
+  timeSlotId: number;
+  startDate: Date;
+  endDate: Date;
+  status: "CONFIRMED" | "COMPLETED" | "CANCELLED" | "ABSENT";
+} & BookingRelations;
 
-export type BookingCheckin = Prisma.CheckinGetPayload<Record<string, never>>;
+export type BookingDetails = BookingWithStudentSummary;
+export type BookingCheckin = Checkin;
+
+async function attachCheckins<T extends { id: number }>(bookings: T[]) {
+  const checkins = await prisma.checkin.findMany({
+    where: { bookingId: { in: bookings.map((booking) => booking.id) } },
+  });
+  const checkinByBooking = new Map(
+    checkins.map((checkin) => [checkin.bookingId, checkin]),
+  );
+
+  return bookings.map((booking) => ({
+    ...booking,
+    checkin: checkinByBooking.get(booking.id) ?? null,
+  }));
+}
 
 export async function getBookingsByStudentId(
-  studentId: string,
+  studentId: number,
 ): Promise<BookingWithStudentSummary[]> {
-  return prisma.booking.findMany({
+  const bookings = await os4Prisma.booking.findMany({
     where: {
-      studentId,
+      userId: studentId,
       status: "CONFIRMED",
+      labMentorId: { not: null },
+      timeSlotId: { not: null },
     },
-    include: {
-      timeslot: {
-        select: {
-          date: true,
-          startTime: true,
-          endTime: true,
-        },
-      },
-      mentor: {
-        select: {
-          name: true,
-          email: true,
-          mentorType: true,
-        },
-      },
-      checkin: true,
-    },
-    orderBy: {
-      timeslot: {
-        date: "asc",
-      },
-    },
+    include: { student: true, mentor: true, timeSlot: true },
+    orderBy: { startDate: "asc" },
   });
+  const complete = bookings.flatMap((booking) =>
+    booking.userId !== null &&
+    booking.labMentorId !== null &&
+    booking.timeSlotId !== null &&
+    booking.student &&
+    booking.mentor &&
+    booking.timeSlot
+      ? [
+          {
+            ...booking,
+            userId: booking.userId,
+            labMentorId: booking.labMentorId,
+            timeSlotId: booking.timeSlotId,
+            student: booking.student,
+            mentor: booking.mentor,
+            timeslot: booking.timeSlot,
+          },
+        ]
+      : [],
+  );
+
+  return attachCheckins(complete);
 }
 
 export async function getBookingById(
-  id: string,
+  id: number,
 ): Promise<BookingDetails | null> {
-  return prisma.booking.findUnique({
+  const booking = await os4Prisma.booking.findUnique({
     where: { id },
-    include: {
-      timeslot: true,
-      mentor: true,
-      student: true,
-      checkin: true,
-    },
+    include: { student: true, mentor: true, timeSlot: true },
   });
+
+  if (
+    !booking ||
+    booking.userId === null ||
+    booking.labMentorId === null ||
+    booking.timeSlotId === null ||
+    !booking.student ||
+    !booking.mentor ||
+    !booking.timeSlot
+  ) {
+    return null;
+  }
+
+  const [result] = await attachCheckins([
+    {
+      ...booking,
+      userId: booking.userId,
+      labMentorId: booking.labMentorId,
+      timeSlotId: booking.timeSlotId,
+      student: booking.student,
+      mentor: booking.mentor,
+      timeslot: booking.timeSlot,
+    },
+  ]);
+  return result;
+}
+
+export async function getConfirmedBookingsBetween(start: Date, end: Date) {
+  const bookings = await os4Prisma.booking.findMany({
+    where: {
+      status: "CONFIRMED",
+      startDate: { gte: start, lt: end },
+      userId: { not: null },
+      labMentorId: { not: null },
+      timeSlotId: { not: null },
+    },
+    include: { student: true, mentor: true, timeSlot: true },
+    orderBy: { startDate: "asc" },
+  });
+  const complete = bookings.flatMap((booking) =>
+    booking.userId !== null &&
+    booking.labMentorId !== null &&
+    booking.timeSlotId !== null &&
+    booking.student &&
+    booking.mentor &&
+    booking.timeSlot
+      ? [{
+          ...booking,
+          userId: booking.userId,
+          labMentorId: booking.labMentorId,
+          timeSlotId: booking.timeSlotId,
+          student: booking.student,
+          mentor: booking.mentor,
+          timeslot: booking.timeSlot,
+        }]
+      : [],
+  );
+  return attachCheckins(complete);
 }
 
 export async function checkInToBooking(
-  bookingId: string,
+  bookingId: number,
 ): Promise<BookingCheckin> {
-  return prisma.checkin.create({
-    data: { bookingId },
-  });
+  return prisma.checkin.create({ data: { bookingId } });
 }

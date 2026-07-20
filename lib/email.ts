@@ -8,7 +8,6 @@ export interface CheckinEmailParams {
   mentorEmail: string;
   mentorName: string;
   studentName: string;
-  mentorType: "CONSULTATION" | "LAB";
   bookingDate: string;
   startTime: string;
   endTime: string;
@@ -57,7 +56,7 @@ export async function sendCheckinNotification(params: CheckinEmailParams) {
   const text = `
 Hi ${params.mentorName},
 
-Your student ${params.studentName} has just checked in for your ${params.mentorType === "LAB" ? "Lab" : "Consultation"} appointment.
+Your student ${params.studentName} has just checked in for your appointment.
 
 Appointment details:
 - Date: ${params.bookingDate}

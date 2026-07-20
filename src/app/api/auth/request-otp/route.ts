@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 import { sendOtpEmail } from "../../../../../lib/email";
 import { generateOtp } from "../../../../../lib/otp";
-import { prisma } from "../../../../../lib/prisma";
+import { os4Prisma } from "../../../../../lib/os4-prisma";
+import { isAdmin } from "../../../../../lib/os4-role";
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await os4Prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       return NextResponse.json(
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user.role === "admin") {
+    if (isAdmin(user.role)) {
       return NextResponse.json(
         { error: "Use the staff login instead" },
         { status: 403 },

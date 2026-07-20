@@ -9,37 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  student
-  mentor
-  admin
-}
-
-enum MentorType {
-  CONSULTATION
-  LAB
-}
-
-enum BookingStatus {
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-}
-
-model User {
-  id         String      @id @default(cuid())
-  email      String      @unique
-  name       String
-  role       Role
-  mentorType MentorType?
-  createdAt  DateTime    @default(now())
-
-  timeslots         Timeslot[]
-  bookingsAsStudent Booking[]  @relation("StudentBookings")
-  bookingsAsMentor  Booking[]  @relation("MentorBookings")
-  shifts            Shift[]
-}
-
 // code is a 4-digit numeric string (e.g. "3847").
 // expiresAt is 10 minutes from creation.
 // usedAt is set when the code is successfully verified — a code can only be used once.
@@ -85,46 +54,18 @@ model AppSetting {
 
 model Shift {
   id         String    @id @default(cuid())
-  mentorId   String
+  // References OS4 users.id (Int) — validated at application level
+  mentorId   Int
   clockInAt  DateTime  @default(now())
   clockOutAt DateTime?
   createdAt  DateTime  @default(now())
 
   // A SQL partial unique index allows only one active shift per mentor.
-  mentor User @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-}
-
-model Timeslot {
-  id        String   @id @default(cuid())
-  mentorId  String
-  date      DateTime
-  startTime DateTime
-  endTime   DateTime
-
-  mentor   User      @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  bookings Booking[]
-}
-
-model Booking {
-  id         String        @id @default(cuid())
-  studentId  String
-  mentorId   String
-  timeslotId String
-  startDate  DateTime
-  endDate    DateTime
-  status     BookingStatus
-  createdAt  DateTime      @default(now())
-
-  student  User     @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
-  mentor   User     @relation("MentorBookings", fields: [mentorId], references: [id], onDelete: Cascade)
-  timeslot Timeslot @relation(fields: [timeslotId], references: [id], onDelete: Cascade)
-  checkin  Checkin?
 }
 
 model Checkin {
   id          String   @id @default(cuid())
-  bookingId   String   @unique
+  // References OS4 bookings.id (Int) — validated at application level
+  bookingId   Int      @unique
   checkedInAt DateTime @default(now())
-
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }

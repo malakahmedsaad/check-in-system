@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/os4-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("OS4_DATABASE_URL")
+}
+
+// READ-ONLY mirror of OS4's schema.
+// NEVER run: npx prisma migrate against this schema.
+// NEVER call .create() .update() .delete() .upsert() on the os4Prisma client.
+// Update this file only when OS4's schema changes — coordinate with the OS4 team first.
+
+enum Role {
+  MEMBER
+  PEER_MENTOR
+  SUPERVISOR
+  ADMIN
+}
+
+enum SlotType {
+  CONSULTATION
+  LAB
+}
+
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  ABSENT
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String
+  role  Role
+  createdAt DateTime @default(now())
+
+  bookings          Booking[]  @relation("StudentBookings")
+  labMentorBookings Booking[]  @relation("LabMentorBookings")
+  mentorTimeSlots   TimeSlot[] @relation("MentorTimeSlots")
+
+  @@map("users")
+}
+
+model TimeSlot {
+  id        Int      @id @default(autoincrement())
+  mentorId  Int
+  labId     Int
+  slotType  SlotType @default(CONSULTATION)
+  date      DateTime
+  startTime String
+  endTime   String
+
+  mentor   User      @relation("MentorTimeSlots", fields: [mentorId], references: [id], onDelete: Cascade)
+  bookings Booking[] @relation("TimeSlotBooking")
+
+  @@map("time_slots")
+}
+
+model Booking {
+  id          Int           @id @default(autoincrement())
+  userId      Int?
+  labMentorId Int?
+  timeSlotId  Int?
+  startDate   DateTime
+  endDate     DateTime
+  status      BookingStatus @default(CONFIRMED)
+  createdAt   DateTime      @default(now())
+
+  student  User?     @relation("StudentBookings", fields: [userId], references: [id], onDelete: SetNull)
+  mentor   User?     @relation("LabMentorBookings", fields: [labMentorId], references: [id], onDelete: SetNull)
+  timeSlot TimeSlot? @relation("TimeSlotBooking", fields: [timeSlotId], references: [id], onDelete: SetNull)
+
+  @@map("bookings")
+}

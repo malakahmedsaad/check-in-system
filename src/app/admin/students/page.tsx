@@ -2,40 +2,28 @@
 
 // Purpose: Renders admin student records and booking/check-in history.
 
-import type { Prisma } from "@prisma/client";
 import { useEffect, useMemo, useState } from "react";
 
 import { useUser } from "../../../../context/UserContext";
 import { APP_TIME_ZONE } from "../../../../lib/date-time";
 
-type StudentPayload = Prisma.UserGetPayload<{
-  include: {
-    bookingsAsStudent: {
-      include: {
-        mentor: {
-          select: {
-            name: true;
-            email: true;
-          };
-        };
-        checkin: true;
-      };
-    };
-  };
-}>;
-
-type Student = Omit<StudentPayload, "createdAt" | "bookingsAsStudent"> & {
+type Student = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
   createdAt: string;
-  bookingsAsStudent: Array<
-    Omit<StudentPayload["bookingsAsStudent"][number], "createdAt" | "startDate" | "endDate" | "checkin"> & {
+  bookingsAsStudent: Array<{
+      id: number;
       createdAt: string;
       startDate: string;
       endDate: string;
+      status: string;
+      mentor: { name: string; email: string } | null;
       checkin: {
         checkedInAt: string;
       } | null;
-    }
-  >;
+    }>;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -54,7 +42,7 @@ function formatDateTime(value: string) {
 export default function AdminStudentsPage() {
   const { logout } = useUser();
   const [students, setStudents] = useState<Student[]>([]);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +107,7 @@ export default function AdminStudentsPage() {
     );
   }, [search, students]);
 
-  function toggleExpanded(studentId: string) {
+  function toggleExpanded(studentId: number) {
     setExpandedIds((current) => {
       const next = new Set(current);
 
@@ -240,7 +228,7 @@ export default function AdminStudentsPage() {
                                     {formatDateTime(booking.startDate)}
                                   </td>
                                   <td className="whitespace-nowrap px-5 py-3 text-sm font-medium text-slate-700">
-                                    {booking.mentor.name}
+                                    {booking.mentor?.name ?? "Unassigned"}
                                   </td>
                                   <td className="whitespace-nowrap px-5 py-3 text-sm text-slate-600">
                                     {booking.status}
