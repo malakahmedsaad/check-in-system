@@ -53,12 +53,14 @@ model AppSetting {
 }
 
 model Shift {
-  id         String    @id @default(cuid())
+  id             String    @id @default(cuid())
   // References OS4 users.id (Int) — validated at application level
-  mentorId   Int
-  clockInAt  DateTime  @default(now())
-  clockOutAt DateTime?
-  createdAt  DateTime  @default(now())
+  mentorId       Int
+  // Retains the former local User CUID for historical shifts migrated to OS4.
+  legacyMentorId String?
+  clockInAt      DateTime  @default(now())
+  clockOutAt     DateTime?
+  createdAt      DateTime  @default(now())
 
   // A SQL partial unique index allows only one active shift per mentor.
 }
