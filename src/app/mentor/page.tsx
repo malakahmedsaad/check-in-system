@@ -327,9 +327,9 @@ export default function MentorPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <p className="text-base font-semibold tracking-tight text-slate-950 sm:text-lg">
+      <header className="h-16 bg-white shadow">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <p className="text-lg font-semibold text-slate-900">
             Bechtel Center Check-In
           </p>
           <div className="flex items-center gap-3">
@@ -339,7 +339,7 @@ export default function MentorPage() {
             {user?.role === "admin" ? (
               <Link
                 href="/admin/kiosk"
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-slate-700"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 Admin
               </Link>
@@ -347,7 +347,7 @@ export default function MentorPage() {
             <button
               type="button"
               onClick={logout}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:scale-[1.02] hover:border-slate-400 hover:bg-slate-50"
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
               Sign out
             </button>
@@ -355,7 +355,7 @@ export default function MentorPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6">
+      <section className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {isUserLoading ? (
           <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -370,15 +370,23 @@ export default function MentorPage() {
           </div>
         ) : (
           <>
-            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
+                <h1 className="text-2xl font-bold text-white">
+                  Welcome, {user?.name ?? "Mentor"}
+                </h1>
+                <p className="mt-1 text-sm text-blue-100">
+                  Manage your shift, appointments, and timesheet.
+                </p>
+              </div>
               <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase text-slate-500">
                     Shift status
                   </p>
                   <h1
-                    className={`mt-3 text-4xl font-semibold tracking-tight ${
-                      activeShift ? "text-emerald-700" : "text-slate-700"
+                    className={`mt-3 text-4xl font-bold ${
+                      activeShift ? "text-green-800" : "text-slate-700"
                     }`}
                   >
                     {isShiftLoading
@@ -414,10 +422,10 @@ export default function MentorPage() {
                   type="button"
                   onClick={handleShiftToggle}
                   disabled={isShiftLoading || isTogglingShift}
-                  className={`rounded-lg px-6 py-4 text-base font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100 ${
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
                     activeShift
-                      ? "bg-slate-800 hover:bg-slate-700"
-                      : "bg-emerald-600 hover:bg-emerald-500"
+                      ? "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 focus:ring-indigo-500"
+                      : "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
                   }`}
                 >
                   {isTogglingShift
@@ -463,7 +471,7 @@ export default function MentorPage() {
                   {appointments.map((appointment) => (
                     <article
                       key={appointment.id}
-                      className="rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:bg-slate-50"
+                      className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-colors hover:bg-slate-50"
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -480,10 +488,10 @@ export default function MentorPage() {
                         </div>
 
                         <span
-                          className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                             appointment.checkin
-                              ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
-                              : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
                           {appointment.checkin
@@ -553,7 +561,7 @@ export default function MentorPage() {
 
                       {!isShiftLoading
                         ? recentShifts.map((shift) => (
-                            <tr key={shift.id}>
+                            <tr key={shift.id} className="hover:bg-slate-50">
                               <td className="whitespace-nowrap px-5 py-4 text-sm font-semibold text-slate-950">
                                 {dateFormatter.format(
                                   new Date(shift.clockInAt),

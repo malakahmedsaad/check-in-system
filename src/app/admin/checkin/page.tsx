@@ -145,23 +145,23 @@ export default function AdminCheckinPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+      <div className="rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
+        <h1 className="text-2xl font-bold text-white">
           Today&apos;s check-ins
         </h1>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-blue-100">
           {dateFormatter.format(new Date())}
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 p-5">
           <input
             type="search"
             placeholder="Search by student name..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="w-full max-w-xl rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            className="w-full max-w-xl rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
           />
           <p className="mt-3 text-sm font-medium text-slate-600">
             {bookings.length} appointments today · {checkedInCount} checked in
@@ -215,7 +215,7 @@ export default function AdminCheckinPage() {
                   );
 
                   return (
-                  <tr key={booking.id} className="align-middle">
+                  <tr key={booking.id} className="align-middle hover:bg-slate-50">
                     <td className="px-5 py-4">
                       <p className="font-semibold text-slate-900">{booking.student.name}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{booking.student.email}</p>
@@ -229,12 +229,12 @@ export default function AdminCheckinPage() {
                     <td className="px-5 py-4">
                       {booking.checkin ? (
                         <>
-                          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">Checked in</span>
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">Checked in</span>
                           <p className="mt-1 text-xs text-slate-500">{timeFormatter.format(new Date(booking.checkin.checkedInAt))}</p>
                         </>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Not arrived</span>
+                          <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-800">Not arrived</span>
                           {tooLate ? (
                             <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-300">
                               Window closed
@@ -246,7 +246,7 @@ export default function AdminCheckinPage() {
                     <td className="px-5 py-4 text-right">
                       {!booking.checkin ? (
                         <>
-                          <button type="button" onClick={() => void checkIn(booking.id)} disabled={pendingId === booking.id} className="rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400">
+                          <button type="button" onClick={() => void checkIn(booking.id)} disabled={pendingId === booking.id} className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
                             {pendingId === booking.id ? "Checking in..." : "Check in"}
                           </button>
                           {rowErrors[booking.id] ? <p className="mt-2 text-xs font-medium text-red-600">{rowErrors[booking.id]}</p> : null}

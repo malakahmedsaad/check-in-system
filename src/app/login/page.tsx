@@ -136,21 +136,21 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 text-slate-950">
-      <div className="w-full max-w-[400px]">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 text-slate-900">
+      <div className="w-full max-w-md space-y-8">
         <div className="mb-8 flex flex-col items-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-indigo-100 bg-white text-lg font-semibold text-indigo-600 shadow-sm">BC</div>
           <p className="mt-3 text-sm font-medium text-slate-500">Bechtel Center Check-In</p>
         </div>
 
         {submittedEmail ? (
-          <form onSubmit={(event) => { event.preventDefault(); void verifyCode(digits.join("")); }} className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
+          <form onSubmit={(event) => { event.preventDefault(); void verifyCode(digits.join("")); }} className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+            <h1 className="text-3xl font-bold text-slate-900">Check your email</h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               We sent a 4-digit code to <span className="font-semibold text-slate-700">{submittedEmail}</span>. Enter it below.
             </p>
 
-            <div className="mt-7 flex justify-center gap-4">
+            <div className="mt-7 flex justify-center gap-3">
               {digits.map((digit, index) => (
                 <input
                   key={index}
@@ -164,16 +164,16 @@ export default function LoginPage() {
                   onChange={(event) => handleDigitChange(index, event.target.value)}
                   onKeyDown={(event) => handleDigitKeyDown(index, event)}
                   autoFocus={index === 0}
-                  className="h-16 w-14 rounded-lg border border-slate-300 bg-white text-center text-[28px] font-semibold outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                  className="h-16 w-14 rounded-lg border-2 border-slate-300 bg-white text-center text-2xl font-bold focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 />
               ))}
             </div>
 
             {error ? <p className="mt-3 text-center text-sm font-medium text-red-600">{error}</p> : null}
-            {confirmation ? <p className="mt-3 text-center text-sm font-medium text-emerald-600">{confirmation}</p> : null}
+            {confirmation ? <p className="mt-3 text-center text-sm font-medium text-green-800">{confirmation}</p> : null}
 
-            <button type="submit" disabled={isVerifying || digits.some((digit) => !digit)} className="mt-7 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100">
-              {isVerifying ? "Verifying..." : "Verify"}
+            <button type="submit" disabled={isVerifying || digits.some((digit) => !digit)} className="mt-7 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50">
+              {isVerifying ? <><span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Verifying...</> : "Verify"}
             </button>
             <button type="button" onClick={() => void handleResend()} disabled={isSending} className="mt-4 w-full text-sm font-medium text-indigo-600 hover:text-indigo-500 disabled:text-slate-400">
               {isSending ? "Sending..." : "Resend code"}
@@ -181,16 +181,16 @@ export default function LoginPage() {
             <button type="button" onClick={useDifferentEmail} className="mt-3 w-full text-sm font-medium text-slate-600 hover:text-slate-900">Use a different email</button>
           </form>
         ) : (
-          <form onSubmit={handleEmailSubmit} className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+          <form onSubmit={handleEmailSubmit} className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+            <h1 className="text-3xl font-bold text-slate-900">Sign in</h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">Enter your Purdue email address and we&apos;ll send you a code</p>
             <div className="mt-7">
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email</label>
-              <input id="email" name="email" type="email" placeholder="yourname@purdue.edu" value={email} onChange={(event) => setEmail(event.target.value)} required className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100" />
+              <input id="email" name="email" type="email" placeholder="yourname@purdue.edu" value={email} onChange={(event) => setEmail(event.target.value)} required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100" />
               {error ? <p className="mt-2 text-sm font-medium text-red-600">{error}</p> : null}
             </div>
-            <button type="submit" disabled={isSending} className="mt-7 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100">
-              {isSending ? "Sending..." : "Send code"}
+            <button type="submit" disabled={isSending} className="mt-7 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50">
+              {isSending ? <><span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Sending...</> : "Send code"}
             </button>
           </form>
         )}

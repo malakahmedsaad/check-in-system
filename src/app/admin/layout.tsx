@@ -31,13 +31,13 @@ export default function AdminLayout({
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-base font-semibold tracking-tight text-slate-950 sm:text-lg">
+      <header className="h-auto bg-white shadow md:h-16">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:py-0 lg:px-8">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-8">
+            <p className="text-lg font-semibold text-slate-900">
               Bechtel Center Admin
             </p>
-            <nav className="mt-3 flex flex-wrap gap-2">
+            <nav className="flex flex-wrap gap-1 md:h-16 md:items-center">
               {navItems.map((item) => {
                 const isActive = pathname.startsWith(item.href);
 
@@ -45,10 +45,10 @@ export default function AdminLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    className={`px-3 py-2 text-sm font-medium transition-colors md:flex md:h-16 md:items-center ${
                       isActive
-                        ? "bg-slate-900 text-white"
-                        : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                        ? "border-b-2 border-indigo-600 text-indigo-600"
+                        : "text-gray-700 hover:text-indigo-600"
                     }`}
                   >
                     {item.label}
@@ -64,7 +64,7 @@ export default function AdminLayout({
             <button
               type="button"
               onClick={logout}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:scale-[1.02] hover:border-slate-400 hover:bg-slate-50"
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
               Sign out
             </button>
@@ -72,16 +72,16 @@ export default function AdminLayout({
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <section className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {isUserLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
+            <h1 className="text-2xl font-bold text-slate-900">
               Loading admin access...
             </h1>
           </div>
         ) : user?.role !== "admin" ? (
-          <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
+            <h1 className="text-2xl font-bold text-slate-900">
               You do not have access to this page
             </h1>
           </div>

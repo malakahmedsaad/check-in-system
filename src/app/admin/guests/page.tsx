@@ -90,19 +90,19 @@ export default function AdminGuestsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+          <h1 className="text-2xl font-bold text-white">
             Guests
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-blue-100">
             Review public guest check-ins.
           </p>
         </div>
         <div>
           <label
             htmlFor="guest-date"
-            className="block text-sm font-medium text-slate-700"
+            className="block text-sm font-medium text-blue-100"
           >
             Date
           </label>
@@ -111,7 +111,7 @@ export default function AdminGuestsPage() {
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="mt-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
           />
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function AdminGuestsPage() {
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
@@ -166,7 +166,7 @@ export default function AdminGuestsPage() {
 
               {!isLoading
                 ? guests.map((guest) => (
-                    <tr key={guest.id}>
+                    <tr key={guest.id} className="hover:bg-slate-50">
                       <td className="whitespace-nowrap px-5 py-4 text-sm font-semibold text-slate-950">
                         {guest.name}
                       </td>
