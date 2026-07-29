@@ -248,12 +248,12 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+          <h1 className="text-2xl font-bold text-white">
             Overview
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-blue-100">
             Daily activity, check-in trends, and mentor timesheets.
           </p>
           <div className="mt-4 flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
@@ -282,35 +282,35 @@ export default function AdminOverviewPage() {
       ) : null}
 
       <section className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">
             Guests today
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-3 text-3xl font-bold text-slate-900">
             {isSummaryLoading ? "-" : summary?.totalGuestsToday ?? 0}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">
             Students checked in today
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-3 text-3xl font-bold text-slate-900">
             {isSummaryLoading
               ? "-"
               : summary?.totalStudentsCheckedInToday ?? 0}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">
             Mentors clocked in
           </p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-3 text-3xl font-bold text-slate-900">
             {isSummaryLoading ? "-" : summary?.totalMentorsClockedIn ?? 0}
           </p>
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="h-80">
           {isCheckinsLoading ? (
             <div className="flex h-full items-center justify-center text-sm font-medium text-slate-500">
@@ -319,28 +319,28 @@ export default function AdminOverviewPage() {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={checkins} margin={{ top: 10, right: 10, left: 0 }}>
-                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid stroke="var(--color-slate-200)" vertical={false} />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "#64748b", fontSize: 12 }}
+                  tick={{ fill: "var(--color-slate-500)", fontSize: 12 }}
                 />
                 <YAxis
                   allowDecimals={false}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "#64748b", fontSize: 12 }}
+                  tick={{ fill: "var(--color-slate-500)", fontSize: 12 }}
                 />
                 <Tooltip
-                  cursor={{ fill: "#f1f5f9" }}
+                  cursor={{ fill: "var(--color-slate-100)" }}
                   contentStyle={{
                     borderRadius: 8,
-                    borderColor: "#cbd5e1",
+                    borderColor: "var(--color-slate-300)",
                     boxShadow: "0 10px 30px rgb(15 23 42 / 0.12)",
                   }}
                 />
-                <Bar dataKey="count" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="var(--color-indigo-600)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -348,21 +348,21 @@ export default function AdminOverviewPage() {
       </section>
 
       <section className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Total check-ins</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-3 text-3xl font-bold text-slate-900">
             {isCheckinsLoading ? "-" : checkinSummary.total}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Average per day</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-3 text-3xl font-bold text-slate-900">
             {isCheckinsLoading ? "-" : checkinSummary.average.toFixed(1)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Busiest period</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-3 text-3xl font-bold text-slate-900">
             {isCheckinsLoading || !checkinSummary.busiest
               ? "-"
               : checkinSummary.busiest.label}
@@ -425,7 +425,7 @@ export default function AdminOverviewPage() {
 
                 {!isShiftsLoading
                   ? shifts.map((shift) => (
-                      <tr key={shift.id}>
+                      <tr key={shift.id} className="hover:bg-slate-50">
                         <td className="whitespace-nowrap px-5 py-4 text-sm font-semibold text-slate-950">
                           {shift.mentorName}
                         </td>

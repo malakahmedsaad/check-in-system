@@ -136,21 +136,21 @@ export default function Home() {
   const isOpen = status?.isOpen ?? false;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col">
-        <header className="flex items-center justify-between">
+    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl flex-col">
+        <header className="mb-6 flex items-center justify-between rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
           <div>
-            <p className="text-base font-semibold text-slate-950 sm:text-lg">
+            <p className="text-2xl font-bold text-white">
               Bechtel Center Check-In Kiosk
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-blue-100">
               Choose how you are visiting today.
             </p>
           </div>
           {isOpen ? (
             <Link
               href="/admin/login"
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+              className="rounded-lg border border-white/40 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-700"
             >
               Staff
             </Link>
@@ -163,8 +163,8 @@ export default function Home() {
               Checking kiosk status...
             </p>
           ) : error ? (
-            <div className="max-w-md text-center">
-              <h1 className="text-3xl font-semibold text-slate-950">
+            <div className="max-w-md rounded-2xl border border-red-200 bg-red-100 p-6 text-center shadow-sm">
+              <h1 className="text-2xl font-bold text-red-800">
                 We could not load kiosk status
               </h1>
               <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -172,19 +172,19 @@ export default function Home() {
               </p>
               <Link
                 href="/admin/login"
-                className="mt-8 inline-flex rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+                className="mt-8 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 Staff sign in
               </Link>
             </div>
           ) : !isOpen ? (
-            <div className="max-w-md text-center">
-              <h1 className="text-3xl font-semibold text-slate-950">
+            <div className="max-w-md rounded-2xl border border-red-200 bg-red-100 p-6 text-center shadow-sm">
+              <h1 className="text-2xl font-bold text-red-800">
                 Kiosk is currently closed
               </h1>
               <Link
                 href="/admin/login"
-                className="mt-8 inline-flex rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+                className="mt-8 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 Staff sign in
               </Link>
@@ -196,15 +196,15 @@ export default function Home() {
                   <Link
                     key={option.title}
                     href={option.href}
-                    className="group flex min-h-56 flex-col rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-indigo-100"
+                    className="group flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all hover:border-indigo-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   >
                     <span className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition group-hover:bg-indigo-600 group-hover:text-white">
                       <OptionIcon icon={option.icon} />
                     </span>
-                    <span className="mt-8 text-3xl font-semibold text-slate-950">
+                    <span className="mt-4 text-lg font-semibold text-slate-900">
                       {option.title}
                     </span>
-                    <span className="mt-3 text-base leading-7 text-slate-500">
+                    <span className="mt-2 text-sm text-slate-600">
                       {option.description}
                     </span>
                   </Link>

@@ -1,19 +1,8 @@
-// Purpose: Defines the root HTML shell, fonts, global styles, and user session provider.
+// Purpose: Defines the root HTML shell, global styles, and user session provider.
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { UserProvider } from "../../context/UserContext";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Bechtel Center Check-In Kiosk",
@@ -26,11 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className="h-full antialiased">
+      <body className="flex min-h-full flex-col font-sans">
         <UserProvider>{children}</UserProvider>
       </body>
     </html>

@@ -236,9 +236,9 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <p className="text-base font-semibold tracking-tight text-slate-950 sm:text-lg">
+      <header className="h-16 bg-white shadow">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <p className="text-lg font-semibold text-slate-900">
             Bechtel Center Check-In
           </p>
           <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={logout}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:scale-[1.02] hover:border-slate-400 hover:bg-slate-50"
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
               Sign out
             </button>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {!isLoading && kioskStatus?.isOpen === false ? (
           <div className="flex min-h-[calc(100vh-9rem)] items-center justify-center py-12 text-center">
             <div>
@@ -286,35 +286,35 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            <div className="max-w-2xl">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+            <div className="mb-6 rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
+              <h1 className="text-2xl font-bold text-white">
                 Welcome, {user?.name ?? "Student"}
               </h1>
-              <p className="mt-2 text-base leading-7 text-slate-500">
+              <p className="mt-1 text-sm text-blue-100">
                 Your upcoming appointments
               </p>
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 bg-white p-5">
-                <p className="text-sm font-medium text-slate-500">Upcoming</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-sm text-slate-500">Upcoming</p>
+                <p className="mt-3 text-3xl font-bold text-slate-900">
                   {isLoading ? "-" : bookings.length}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-5">
-                <p className="text-sm font-medium text-slate-500">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-sm text-slate-500">
                   Checked in today
                 </p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                <p className="mt-3 text-3xl font-bold text-slate-900">
                   {isLoading ? "-" : checkedInTodayCount}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-5">
-                <p className="text-sm font-medium text-slate-500">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-sm text-slate-500">
                   Next appointment
                 </p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                <p className="mt-3 text-3xl font-bold text-slate-900">
                   {isLoading ? "-" : nextAppointmentTime}
                 </p>
               </div>
@@ -371,7 +371,7 @@ export default function DashboardPage() {
                     return (
                       <article
                         key={booking.id}
-                        className="rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:bg-slate-50"
+                        className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-colors hover:bg-slate-50"
                       >
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex min-w-0 items-start gap-4">
@@ -438,10 +438,10 @@ export default function DashboardPage() {
 
                           <div className="flex flex-col items-start gap-3 sm:items-end">
                             <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                                 booking.checkin
-                                  ? "bg-teal-50 text-teal-700 ring-1 ring-teal-100"
-                                  : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
                               {booking.checkin ? "Checked in" : "Confirmed"}
@@ -449,15 +449,15 @@ export default function DashboardPage() {
 
                             {!booking.checkin && isOpen ? (
                               <>
-                                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-green-800">
+                                  <span className="h-2 w-2 rounded-full bg-green-600" />
                                   Open now
                                 </span>
                               <button
                                 type="button"
                                 onClick={() => handleCheckIn(booking.id)}
                                 disabled={isCheckingIn}
-                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100"
+                                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
                               >
                                 {isCheckingIn ? "Checking in..." : "Check In"}
                               </button>
