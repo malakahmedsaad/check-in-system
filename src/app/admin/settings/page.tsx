@@ -77,7 +77,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="max-w-xl space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+        <h1 className="text-2xl font-bold text-slate-900">
           Settings
         </h1>
         <p className="mt-2 text-sm text-slate-500">
@@ -87,7 +87,7 @@ export default function AdminSettingsPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <div>
           <h2 className="text-lg font-semibold text-slate-950">Admin PIN</h2>
@@ -109,7 +109,7 @@ export default function AdminSettingsPage() {
               maxLength={6}
               value={currentPin}
               onChange={(event) => setCurrentPin(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-950 outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
               required
             />
           </div>
@@ -129,7 +129,7 @@ export default function AdminSettingsPage() {
               maxLength={6}
               value={newPin}
               onChange={(event) => setNewPin(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-950 outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
               required
             />
           </div>
@@ -149,7 +149,7 @@ export default function AdminSettingsPage() {
               maxLength={6}
               value={confirmPin}
               onChange={(event) => setConfirmPin(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-950 outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
               required
             />
           </div>
@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
         ) : null}
 
         {success ? (
-          <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          <p className="mt-5 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
             {success}
           </p>
         ) : null}
@@ -170,7 +170,7 @@ export default function AdminSettingsPage() {
         <button
           type="submit"
           disabled={isSaving}
-          className="mt-7 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100"
+          className="mt-7 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
         >
           {isSaving ? "Saving..." : "Save PIN"}
         </button>

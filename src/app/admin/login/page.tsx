@@ -60,8 +60,8 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 text-slate-950">
-      <div className="w-full max-w-[400px]">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 text-slate-900">
+      <div className="w-full max-w-md space-y-8">
         <div className="mb-8 flex flex-col items-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-indigo-100 bg-white text-lg font-semibold text-indigo-600 shadow-sm">
             BC
@@ -73,10 +73,10 @@ export default function AdminLoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
+          className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm"
         >
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+            <h1 className="text-3xl font-bold text-slate-900">
               Staff sign in
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -99,7 +99,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
             />
           </div>
 
@@ -120,7 +120,7 @@ export default function AdminLoginPage() {
               value={pin}
               onChange={(event) => setPin(event.target.value)}
               required
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
             />
             {error ? (
               <p className="mt-2 text-sm font-medium text-red-600">{error}</p>
@@ -130,9 +130,9 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-7 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100"
+            className="mt-7 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? <><span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Signing in...</> : "Sign in"}
           </button>
         </form>
       </div>

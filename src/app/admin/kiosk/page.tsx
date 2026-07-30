@@ -150,8 +150,12 @@ export default function AdminKioskPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-12rem)] items-center">
-      <div className="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <div className="space-y-6">
+      <div className="rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
+        <h1 className="text-2xl font-bold text-white">Kiosk control</h1>
+        <p className="mt-1 text-sm text-blue-100">Open or close the visitor check-in experience.</p>
+      </div>
+      <div className={`w-full rounded-2xl border p-6 shadow-sm sm:p-8 ${isOpen ? "border-green-200 bg-green-50" : "border-slate-200 bg-slate-50"}`}>
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase text-slate-500">
@@ -159,7 +163,7 @@ export default function AdminKioskPage() {
             </p>
             <h1
               className={`mt-3 text-4xl font-semibold tracking-tight ${
-                isOpen ? "text-emerald-700" : "text-slate-700"
+                isOpen ? "text-green-800" : "text-slate-700"
               }`}
             >
               {isLoading
@@ -172,7 +176,7 @@ export default function AdminKioskPage() {
           <div
             className={`h-16 w-16 rounded-full ring-8 ${
               isOpen
-                ? "bg-emerald-500 ring-emerald-100"
+                ? "bg-green-600 ring-green-100"
                 : "bg-slate-400 ring-slate-100"
             }`}
             aria-hidden="true"
@@ -216,17 +220,17 @@ export default function AdminKioskPage() {
               maxLength={6}
               value={pin}
               onChange={(event) => setPin(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-slate-950 outline-none transition-colors focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
             />
           </div>
           <button
             type="button"
             onClick={handleToggle}
             disabled={isLoading || isToggling || !status || !pin}
-            className={`self-end rounded-lg px-5 py-3 text-base font-semibold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:scale-100 ${
+            className={`self-end rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
               isOpen
-                ? "bg-slate-800 hover:bg-slate-700"
-                : "bg-emerald-600 hover:bg-emerald-500"
+                ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                : "bg-green-600 hover:bg-green-700 focus:ring-green-500"
             }`}
           >
             {isToggling
@@ -240,7 +244,7 @@ export default function AdminKioskPage() {
         {isOpen ? (
           <Link
             href="/"
-            className="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 text-base font-semibold text-slate-700 transition hover:scale-[1.01] hover:border-slate-400 hover:bg-slate-50 sm:w-auto"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
           >
             Open sign-in page
           </Link>
