@@ -26,12 +26,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const timeFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: APP_TIME_ZONE,
-  hour: "numeric",
-  minute: "2-digit",
-});
-
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: APP_TIME_ZONE,
   weekday: "long",

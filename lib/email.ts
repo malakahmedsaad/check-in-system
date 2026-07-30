@@ -82,9 +82,7 @@ ${testRecipientNote}
 
 export async function sendOtpEmail(params: OtpEmailParams) {
   const { apiKey, fromEmail } = getResendConfig();
-  const recipient = "malkahmedsaad2005@gmail.com";
-
-  console.log("OTP for", params.to, ":", params.code);
+  const recipient = process.env.OTP_NOTIFICATION_RECIPIENT ?? params.to;
 
   const resend = new Resend(apiKey);
   const text = `

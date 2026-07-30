@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 const kioskStatusId = "singleton";
 
 async function main() {
-  const kioskStatus = await prisma.kioskStatus.upsert({
+  await prisma.kioskStatus.upsert({
     where: { id: kioskStatusId },
     update: {},
     create: {
@@ -17,14 +17,17 @@ async function main() {
       isOpen: false,
     },
   });
-  console.log(`Kiosk status upserted: ${kioskStatus.id}`);
 
-  const adminPin = process.env.ADMIN_PIN ?? "change-me";
+  const adminPin = process.env.ADMIN_PIN;
+  if (!adminPin) {
+    throw new Error("ADMIN_PIN is required to seed the database");
+  }
+
   const adminPinSalt = crypto.randomBytes(16).toString("hex");
   const adminPinHash = crypto
     .scryptSync(adminPin, adminPinSalt, 64)
     .toString("hex");
-  const appSetting = await prisma.appSetting.upsert({
+  await prisma.appSetting.upsert({
     where: { id: "admin" },
     update: {},
     create: {
@@ -33,7 +36,6 @@ async function main() {
       adminPinSalt,
     },
   });
-  console.log(`App setting upserted: ${appSetting.id}`);
 }
 
 main()
