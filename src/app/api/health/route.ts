@@ -2,17 +2,43 @@
 
 import { NextResponse } from "next/server";
 
-export async function GET() {
+import { os4Prisma } from "@/lib/os4-prisma";
+import { prisma } from "@/lib/prisma";
+
+async function checkKioskDatabase() {
   try {
-    return NextResponse.json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    await prisma.$queryRaw`SELECT 1`;
+    return "ok" as const;
+  } catch {
+    return "error" as const;
   }
+}
+
+async function checkOs4Database() {
+  try {
+    await os4Prisma.$queryRaw`SELECT 1`;
+    return "ok" as const;
+  } catch {
+    return "error" as const;
+  }
+}
+
+export async function GET() {
+  const [kioskDatabase, os4Database] = await Promise.all([
+    checkKioskDatabase(),
+    checkOs4Database(),
+  ]);
+  const status =
+    kioskDatabase === "ok" && os4Database === "ok"
+      ? "ok"
+      : kioskDatabase === "error" && os4Database === "error"
+        ? "down"
+        : "degraded";
+
+  return NextResponse.json({
+    status,
+    kiosk_db: kioskDatabase,
+    os4_db: os4Database,
+    timestamp: new Date().toISOString(),
+  });
 }
