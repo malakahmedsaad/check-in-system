@@ -17,22 +17,18 @@ export async function GET(request: Request) {
     const mentorId = new URL(request.url).searchParams.get("mentorId");
 
     if (mentorId) {
+      const parsedMentorId = Number(mentorId);
+      if (!Number.isInteger(parsedMentorId) || parsedMentorId <= 0) {
+        return NextResponse.json({ error: "Invalid mentor id" }, { status: 400 });
+      }
       const shifts = await prisma.shift.findMany({
         where: {
-          mentorId,
+          mentorId: parsedMentorId,
         },
         orderBy: {
           clockInAt: "desc",
         },
         take: 50,
-        include: {
-          mentor: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
       });
 
       return NextResponse.json(shifts);

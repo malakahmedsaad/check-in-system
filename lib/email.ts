@@ -8,7 +8,6 @@ export interface CheckinEmailParams {
   mentorEmail: string;
   mentorName: string;
   studentName: string;
-  mentorType: "CONSULTATION" | "LAB";
   bookingDate: string;
   startTime: string;
   endTime: string;
@@ -57,7 +56,7 @@ export async function sendCheckinNotification(params: CheckinEmailParams) {
   const text = `
 Hi ${params.mentorName},
 
-Your student ${params.studentName} has just checked in for your ${params.mentorType === "LAB" ? "Lab" : "Consultation"} appointment.
+Your student ${params.studentName} has just checked in for your appointment.
 
 Appointment details:
 - Date: ${params.bookingDate}
@@ -83,9 +82,7 @@ ${testRecipientNote}
 
 export async function sendOtpEmail(params: OtpEmailParams) {
   const { apiKey, fromEmail } = getResendConfig();
-  const recipient = "malkahmedsaad2005@gmail.com";
-
-  console.log("OTP for", params.to, ":", params.code);
+  const recipient = process.env.OTP_NOTIFICATION_RECIPIENT ?? params.to;
 
   const resend = new Resend(apiKey);
   const text = `

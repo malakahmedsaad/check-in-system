@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 
 import { verifyAdminPin } from "../../../../../lib/admin-pin";
 import { signToken } from "../../../../../lib/auth";
-import { prisma } from "../../../../../lib/prisma";
+import { os4Prisma } from "../../../../../lib/os4-prisma";
+import { isAdmin, translateRole } from "../../../../../lib/os4-role";
 
 const ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
@@ -71,11 +72,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await os4Prisma.user.findUnique({
     where: { email },
   });
 
-  if (!user || user.role !== "admin") {
+  if (!user || !isAdmin(user.role)) {
     return NextResponse.json(
       { error: "No account found for this email" },
       { status: 401 },
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     user: {
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: translateRole(user.role),
     },
   });
 

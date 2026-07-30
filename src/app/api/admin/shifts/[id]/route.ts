@@ -76,17 +76,9 @@ export async function PATCH(request: Request, context: RouteContext) {
         ...(clockInAt ? { clockInAt } : {}),
         ...(clockOutAt ? { clockOutAt } : {}),
       },
-      include: {
-        mentor: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
     });
 
-    return NextResponse.json(updatedShift);
+    return NextResponse.json({ ...updatedShift, mentor: shift.mentor });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

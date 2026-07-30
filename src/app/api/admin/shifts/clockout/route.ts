@@ -22,14 +22,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    if (typeof body.mentorId !== "string" || !body.mentorId) {
+    const mentorId = Number(body.mentorId);
+    if (!Number.isInteger(mentorId) || mentorId <= 0) {
       return NextResponse.json(
         { error: "mentorId is required" },
         { status: 400 },
       );
     }
 
-    const activeShift = await getActiveShiftForMentor(body.mentorId);
+    const activeShift = await getActiveShiftForMentor(mentorId);
 
     if (!activeShift) {
       return NextResponse.json(
@@ -46,17 +47,9 @@ export async function POST(request: Request) {
       data: {
         clockOutAt: new Date(),
       },
-      include: {
-        mentor: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
     });
 
-    return NextResponse.json(updatedShift);
+    return NextResponse.json({ ...updatedShift, mentor: activeShift.mentor });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

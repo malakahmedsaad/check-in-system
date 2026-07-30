@@ -24,6 +24,8 @@ type ShiftStatus = {
 
 type Appointment = {
   id: string;
+  startDate: string;
+  endDate: string;
   student: {
     name: string;
     email: string;
@@ -472,8 +474,8 @@ export default function MentorPage() {
                             {appointment.student.email}
                           </p>
                           <p className="mt-2 text-sm font-medium text-slate-700">
-                            {formatTime(appointment.timeslot.startTime)} -{" "}
-                            {formatTime(appointment.timeslot.endTime)}
+                            {formatTime(appointment.startDate)} -{" "}
+                            {formatTime(appointment.endDate)}
                           </p>
                         </div>
 

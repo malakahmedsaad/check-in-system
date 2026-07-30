@@ -12,11 +12,12 @@ type Checkin = { id: string; bookingId: string; checkedInAt: string };
 
 type Booking = {
   id: string;
+  startDate: string;
+  endDate: string;
   student: { name: string; email: string };
   mentor: {
     name: string;
     email: string;
-    mentorType: "CONSULTATION" | "LAB" | null;
   };
   timeslot: { startTime: string; endTime: string };
   checkin: Checkin | null;
@@ -210,7 +211,7 @@ export default function AdminCheckinPage() {
               >
                 {filteredBookings.map((booking) => {
                   const { tooLate } = computeCheckinWindow(
-                    new Date(booking.timeslot.startTime),
+                    new Date(booking.startDate),
                   );
 
                   return (
@@ -221,12 +222,9 @@ export default function AdminCheckinPage() {
                     </td>
                     <td className="px-5 py-4">
                       <p className="font-medium text-slate-800">{booking.mentor.name}</p>
-                      <span className="mt-1 inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">
-                        {booking.mentor.mentorType === "LAB" ? "Lab" : "Consultation"}
-                      </span>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-700">
-                      {timeFormatter.format(new Date(booking.timeslot.startTime))} – {timeFormatter.format(new Date(booking.timeslot.endTime))}
+                      {timeFormatter.format(new Date(booking.startDate))} – {timeFormatter.format(new Date(booking.endDate))}
                     </td>
                     <td className="px-5 py-4">
                       {booking.checkin ? (

@@ -3,87 +3,46 @@
 import { NextResponse } from "next/server";
 
 import { getAppDayRange } from "../../../../../lib/date-time";
+import { os4Prisma } from "../../../../../lib/os4-prisma";
 import { prisma } from "../../../../../lib/prisma";
 import { requireAdmin } from "../../../../../lib/require-admin";
 
 export async function GET() {
   try {
-    const session = await requireAdmin();
-
-    if (!session) {
+    if (!(await requireAdmin())) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-
     const { start, end } = getAppDayRange();
     const [mentors, allMentorShifts] = await Promise.all([
-      prisma.user.findMany({
-        where: {
-          role: "mentor",
-        },
-        orderBy: {
-          name: "asc",
-        },
-        include: {
-          shifts: {
-            take: 10,
-            orderBy: {
-              clockInAt: "desc",
-            },
-          },
-          _count: {
-            select: {
-              bookingsAsMentor: {
-                where: {
-                  startDate: {
-                    gte: start,
-                    lt: end,
-                  },
-                },
-              },
-            },
-          },
-        },
+      os4Prisma.user.findMany({
+        where: { role: "PEER_MENTOR" },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true },
       }),
-      prisma.shift.findMany({
-        select: {
-          mentorId: true,
-          clockInAt: true,
-          clockOutAt: true,
-        },
-      }),
+      prisma.shift.findMany({ orderBy: { clockInAt: "desc" } }),
     ]);
-
-    const now = new Date();
-    const totalHoursByMentor = new Map<string, number>();
-
-    allMentorShifts.forEach((shift) => {
-      const endTime = shift.clockOutAt ?? now;
-      const durationHours =
-        (endTime.getTime() - shift.clockInAt.getTime()) / (1000 * 60 * 60);
-
-      totalHoursByMentor.set(
-        shift.mentorId,
-        (totalHoursByMentor.get(shift.mentorId) ?? 0) +
-          Math.max(0, durationHours),
-      );
+    const counts = await os4Prisma.booking.groupBy({
+      by: ["labMentorId"],
+      where: { labMentorId: { in: mentors.map((mentor) => mentor.id) }, startDate: { gte: start, lt: end } },
+      _count: true,
     });
-
-    return NextResponse.json(
-      mentors.map((mentor) => ({
-        id: mentor.id,
-        name: mentor.name,
-        email: mentor.email,
-        mentorType: mentor.mentorType,
-        todaysAppointmentCount: mentor._count.bookingsAsMentor,
-        totalHours: totalHoursByMentor.get(mentor.id) ?? 0,
-        shifts: mentor.shifts,
-      })),
-    );
+    const countByMentor = new Map(counts.map((row) => [row.labMentorId, row._count]));
+    const now = new Date();
+    return NextResponse.json(mentors.map((mentor) => {
+      const shifts = allMentorShifts.filter((shift) => shift.mentorId === mentor.id);
+      const totalHours = shifts.reduce((total, shift) => {
+        const endTime = shift.clockOutAt ?? now;
+        return total + Math.max(0, (endTime.getTime() - shift.clockInAt.getTime()) / 3_600_000);
+      }, 0);
+      return {
+        ...mentor,
+        todaysAppointmentCount: countByMentor.get(mentor.id) ?? 0,
+        totalHours,
+        shifts: shifts.slice(0, 10),
+      };
+    }));
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

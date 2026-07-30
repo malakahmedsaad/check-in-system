@@ -1,8 +1,10 @@
 // Purpose: Returns recent mentor shifts for admin analytics tables.
 
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../../../../../lib/prisma";
+import { os4Prisma } from "../../../../../../lib/os4-prisma";
 import { requireAdmin } from "../../../../../../lib/require-admin";
 
 export async function GET() {
@@ -18,14 +20,28 @@ export async function GET() {
       orderBy: {
         clockInAt: "desc",
       },
-      include: {
-        mentor: {
-          select: {
-            name: true,
-          },
-        },
-      },
     });
+    const mentors = await os4Prisma.user.findMany({
+      where: { id: { in: shifts.map((shift) => shift.mentorId) } },
+      select: { id: true, name: true },
+    });
+    const mentorNames = new Map(mentors.map((mentor) => [mentor.id, mentor.name]));
+    const legacyMentorIds = shifts.flatMap((shift) =>
+      shift.legacyMentorId ? [shift.legacyMentorId] : [],
+    );
+    const legacyMentors =
+      legacyMentorIds.length > 0
+        ? await prisma.$queryRaw<Array<{ id: string; name: string }>>(
+            Prisma.sql`
+              SELECT "id", "name"
+              FROM "User"
+              WHERE "id" IN (${Prisma.join(legacyMentorIds)})
+            `,
+          )
+        : [];
+    const legacyMentorNames = new Map(
+      legacyMentors.map((mentor) => [mentor.id, mentor.name]),
+    );
 
     return NextResponse.json(
       shifts.map((shift) => {
@@ -36,7 +52,12 @@ export async function GET() {
 
         return {
           id: shift.id,
-          mentorName: shift.mentor.name,
+          mentorName:
+            mentorNames.get(shift.mentorId) ??
+            (shift.legacyMentorId
+              ? legacyMentorNames.get(shift.legacyMentorId)
+              : undefined) ??
+            "Unknown mentor",
           clockInAt: shift.clockInAt,
           clockOutAt: shift.clockOutAt,
           durationHours,

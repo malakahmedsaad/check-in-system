@@ -2,45 +2,37 @@
 
 // Purpose: Renders admin mentor summaries and full shift-management controls.
 
-import type { Prisma } from "@prisma/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useUser } from "../../../../context/UserContext";
 import { APP_TIME_ZONE } from "../../../../lib/date-time";
 
-type MentorPayload = Prisma.UserGetPayload<{
-  include: {
-    shifts: true;
-  };
-}>;
-
-type Shift = Omit<
-  MentorPayload["shifts"][number],
-  "clockInAt" | "clockOutAt" | "createdAt"
-> & {
+type Shift = {
+  id: string;
+  mentorId: number;
   clockInAt: string;
   clockOutAt: string | null;
   createdAt: string;
 };
 
-type Mentor = Pick<
-  MentorPayload,
-  "id" | "name" | "email" | "mentorType"
-> & {
+type Mentor = {
+  id: number;
+  name: string;
+  email: string;
   todaysAppointmentCount: number;
   totalHours: number;
 };
 
-type MentorShiftStatus = Pick<
-  MentorPayload,
-  "id" | "name" | "email" | "mentorType"
-> & {
+type MentorShiftStatus = {
+  id: number;
+  name: string;
+  email: string;
   mostRecentShift: Shift | null;
   isClockedIn: boolean;
 };
 
 type EditState = {
-  mentorId: string;
+  mentorId: number;
   shiftId: string;
   clockInAt: string;
   clockOutAt: string;
@@ -68,18 +60,6 @@ const dateTimeInputFormatter = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
   hourCycle: "h23",
 });
-
-function formatMentorType(mentorType: string | null) {
-  if (!mentorType) {
-    return "Not set";
-  }
-
-  return mentorType
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 function formatDuration(clockInAt: string, clockOutAt: string) {
   const durationMs =
@@ -188,11 +168,11 @@ export default function AdminMentorsPage() {
   const [shiftsByMentor, setShiftsByMentor] = useState<
     Record<string, Shift[]>
   >({});
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [loadingShiftIds, setLoadingShiftIds] = useState<Set<string>>(
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const [loadingShiftIds, setLoadingShiftIds] = useState<Set<number>>(
     new Set(),
   );
-  const [clockingOutId, setClockingOutId] = useState<string | null>(null);
+  const [clockingOutId, setClockingOutId] = useState<number | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
   const [deleteShiftId, setDeleteShiftId] = useState<string | null>(null);
   const [savingShiftId, setSavingShiftId] = useState<string | null>(null);
@@ -232,7 +212,7 @@ export default function AdminMentorsPage() {
   }, [handleUnauthorized]);
 
   const loadMentorShifts = useCallback(
-    async (mentorId: string) => {
+    async (mentorId: number) => {
       setLoadingShiftIds((current) => new Set(current).add(mentorId));
 
       try {
@@ -345,7 +325,7 @@ export default function AdminMentorsPage() {
     [shiftStatuses],
   );
 
-  async function toggleTimesheet(mentorId: string) {
+  async function toggleTimesheet(mentorId: number) {
     setEditState(null);
     setDeleteShiftId(null);
     setRowError(null);
@@ -374,7 +354,7 @@ export default function AdminMentorsPage() {
     }
   }
 
-  async function forceClockOut(mentorId: string) {
+  async function forceClockOut(mentorId: number) {
     setClockingOutId(mentorId);
     setError(null);
 
@@ -423,7 +403,7 @@ export default function AdminMentorsPage() {
     }
   }
 
-  function beginEdit(mentorId: string, shift: Shift) {
+  function beginEdit(mentorId: number, shift: Shift) {
     setDeleteShiftId(null);
     setRowError(null);
     setEditState({
@@ -482,7 +462,7 @@ export default function AdminMentorsPage() {
     }
   }
 
-  async function deleteShift(mentorId: string, shiftId: string) {
+  async function deleteShift(mentorId: number, shiftId: string) {
     setDeletingShiftId(shiftId);
     setRowError(null);
 
@@ -589,9 +569,6 @@ export default function AdminMentorsPage() {
                         <span className="font-semibold text-slate-950">
                           {mentor.name}
                         </span>
-                        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                          {formatMentorType(mentor.mentorType)}
-                        </span>
                       </div>
                       <p className="mt-2 text-sm text-slate-600">
                         Clocked in at {timeFormatter.format(new Date(activeShift.clockInAt))}
@@ -653,9 +630,6 @@ export default function AdminMentorsPage() {
                         {mentor.email}
                       </p>
                     </div>
-                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                      {formatMentorType(mentor.mentorType)}
-                    </span>
                   </div>
                   <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 text-sm">
                     <div>

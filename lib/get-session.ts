@@ -3,7 +3,8 @@
 import { cookies } from "next/headers";
 
 import { verifyToken } from "./auth";
-import { prisma } from "./prisma";
+import { os4Prisma } from "./os4-prisma";
+import { translateRole } from "./os4-role";
 
 export async function getSession() {
   const cookieStore = await cookies();
@@ -19,7 +20,7 @@ export async function getSession() {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await os4Prisma.user.findUnique({
     where: {
       id: session.userId,
     },
@@ -30,14 +31,14 @@ export async function getSession() {
     },
   });
 
-  if (!user || user.role !== session.role) {
+  if (!user || translateRole(user.role) !== session.role) {
     return null;
   }
 
   return {
     userId: session.userId,
     email: user.email,
-    role: user.role,
+    role: translateRole(user.role),
     name: user.name,
   };
 }
