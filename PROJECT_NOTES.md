@@ -1,356 +1,267 @@
-# Project Notes
+# Kiosk App — Project Notes
 
-This document explains how the check-in system is currently built, how to run it locally, and the architecture a developer should understand before making changes.
+This document explains how the kiosk application is designed, how its main workflows operate, and why key implementation decisions were made. For installation and local startup instructions, use `HANDOFF.md`. Environment variable details live in `.env.local.example`.
 
-## Stack
+## Purpose and users
 
-- Framework: Next.js App Router with TypeScript
-- App directory: `src/app`
-- Styling: Tailwind CSS
-- Database: PostgreSQL
-- ORM: Prisma 6
-- Auth: magic links for students/mentors, PIN login for admins, and JWT httpOnly cookies
-- Email: Resend
-- Charts: Recharts
-- Package manager: pnpm
+The application supports daily check-in operations at the Bechtel Center for Innovation and Design:
 
-This project started from a `create-next-app` skeleton. Do not reinitialize the app.
+- Students authenticate with their OS4 email and check in to confirmed appointments.
+- Peer mentors authenticate with their OS4 email, clock in or out, and view the day's appointments.
+- Staff authenticate with an OS4 admin or supervisor email plus the shared kiosk PIN, then manage kiosk activity and reporting.
+- Guests do not authenticate; they submit a visit questionnaire.
 
-## Repository Architecture
+The app owns kiosk-specific operational data. It does not own the OS4 user or appointment system.
 
-The app is organized around Next.js App Router routes in `src/app`, with shared server utilities in root `lib`, React session state in `context`, and Prisma schema/migrations in `prisma`.
+## Architecture
+
+The project uses the Next.js App Router with TypeScript. Pages and route handlers live in `src/app`, shared server logic lives in `lib`, client session state lives in `context`, and the database schemas live in `prisma` and `prisma-os4`.
 
 ```text
 src/app/
-  page.tsx                         Public landing/status page
-  layout.tsx                       Root layout and UserProvider
-  login/page.tsx                   Magic-link sign-in for students and mentors
-  guest/page.tsx                   Public guest check-in form
-  dashboard/page.tsx               Student check-in dashboard
-  mentor/page.tsx                  Mentor clock-in/out dashboard
-  admin/layout.tsx                 Shared admin navigation and page-level gate
-  admin/login/page.tsx             Admin email + PIN sign-in
-  admin/overview/page.tsx          Admin overview dashboard
-  admin/kiosk/page.tsx             Admin kiosk open/close control
-  admin/guests/page.tsx            Admin guest visit history
-  admin/students/page.tsx          Admin student records
-  admin/mentors/page.tsx           Admin mentor records and hours
-  admin/settings/page.tsx          Admin PIN settings
-  admin/analytics/page.tsx         Admin analytics and mentor timesheets
-  api/                             Route handlers
+  page.tsx                         Public kiosk landing/status page
+  error.tsx                        Application error fallback
+  not-found.tsx                    Branded 404 page
+  login/page.tsx                   Student and mentor OTP sign-in
+  guest/page.tsx                   Public guest questionnaire
+  dashboard/page.tsx               Student appointment dashboard
+  mentor/page.tsx                  Mentor schedule and time clock
+  admin/                           Staff pages and shared admin layout
+  api/                             HTTP route handlers
 
 context/
-  UserContext.tsx                  Client-side session restoration, login, logout
+  UserContext.tsx                  Client session restoration and logout
 
 lib/
-  auth.ts                          JWT sign/verify helpers
-  otp.ts                           One-time passcode helpers
-  get-session.ts                   Server-side cookie-to-session helper
-  require-admin.ts                 Admin session helper for API routes
-  prisma.ts                        Prisma client singleton
-  date-time.ts                     Shared app timezone utilities
-  email.ts                         Resend notification helper
+  auth.ts                          JWT signing and verification
+  otp.ts                           OTP generation and verification
+  email.ts                         Resend delivery
+  get-session.ts                   Cookie-to-session lookup
+  require-admin.ts                 Admin authorization helper
   admin-pin.ts                     Admin PIN hashing and verification
-  db/bookings.ts                   Booking/check-in data access helpers
-  db/shifts.ts                     Mentor shift data access helpers
+  prisma.ts                        Kiosk Prisma client
+  os4-prisma.ts                    Read-only OS4 Prisma client
+  os4-role.ts                      OS4-to-kiosk role translation
+  date-time.ts                     Application timezone calculations
+  csv.ts                           CSV serialization
+  db/bookings.ts                   Cross-database booking/check-in access
+  db/shifts.ts                     Cross-database mentor/shift access
+  db/join.ts                       Bulk OS4 enrichment for exports
 
 prisma/
-  schema.prisma                    Data model
-  migrations/                      Database migrations
-  seed.ts                          Local sample data
+  schema.prisma                    Kiosk-owned data model
+  migrations/                      Kiosk database migrations
+  seed.ts                          Kiosk singleton and admin PIN seed
+
+prisma-os4/
+  schema.prisma                    Read-only mirror of relevant OS4 models
 ```
 
-The important dependency direction is:
+The main dependency direction is:
 
-1. Client pages call API routes with `fetch(..., { credentials: "include" })`.
-2. API routes call `getSession()` or `requireAdmin()` for authentication and authorization.
-3. API routes call `lib/db/*` helpers or Prisma directly for database access.
-4. Prisma uses PostgreSQL through `DATABASE_URL`.
-5. Email notification is attempted after check-in but must never block a successful check-in response.
+1. Client pages call route handlers.
+2. Protected handlers validate the JWT session and required role.
+3. Handlers call shared database helpers or one of the two Prisma clients.
+4. Kiosk records are read from or written to the kiosk database.
+5. User, role, appointment, and timeslot data is read from OS4.
+6. Responses combine the data needed by the UI.
 
-Each source file starts with a short `Purpose:` header. Keep those headers current when changing a file's responsibility.
+Keep the short `Purpose:` header at the top of source files current when their responsibility changes.
 
-## Route Architecture
+## Two-database design
 
-Pages:
+The application deliberately uses two independent PostgreSQL connections.
 
-- `/`: public landing/status page
-- `/login`: student/mentor OTP sign-in page
-- `/auth/verify`: retired magic-link compatibility page
-- `/guest`: public guest check-in form
-- `/dashboard`: student dashboard
-- `/mentor`: mentor dashboard with shift clock-in/out and appointments
-- `/admin/login`: admin email + PIN sign-in page
-- `/admin/overview`: admin overview dashboard
-- `/admin/kiosk`: admin kiosk open/close page
-- `/admin/guests`: admin guest visit history
-- `/admin/students`: admin student records and booking history
-- `/admin/mentors`: admin mentor summaries, hours, and shift history
-- `/admin/settings`: admin PIN settings
-- `/admin/analytics`: admin analytics and mentor timesheet page
+### Kiosk database
 
-API routes:
+`lib/prisma.ts` uses `DATABASE_URL`. This database is owned by this project and may be migrated by this repository.
 
-- `GET /api/health`: public health check
-- `POST /api/auth/request-link`: creates and emails a student/mentor OTP code
-- `POST /api/auth/verify-link`: verifies an OTP code and creates a session
-- `POST /api/auth/logout`: clears token cookie
-- `GET /api/auth/me`: returns current session user
-- `POST /api/guest`: records a public guest visit
-- `GET /api/bookings`: returns confirmed bookings for the logged-in student
-- `POST /api/bookings/[id]/checkin`: checks a student into a booking
-- `GET /api/admin/kiosk`: public kiosk status for student dashboard gating
-- `POST /api/admin/kiosk`: admin-only kiosk open/close
-- `POST /api/admin/login`: admin email + PIN login
-- `GET /api/admin/overview`: admin-only daily summary counts
-- `GET /api/admin/guests`: admin-only guest visit records
-- `GET /api/admin/students`: admin-only student records
-- `GET /api/admin/mentors`: admin-only mentor records and totals
-- `POST /api/admin/settings/pin`: admin-only PIN change
-- `GET /api/admin/analytics/checkins`: admin-only check-in bucket data
-- `GET /api/admin/analytics/mentors`: admin-only mentor shift data
-- `GET /api/mentor/shift`: mentor-only active/recent shifts and completed hours
-- `POST /api/mentor/shift`: mentor-only clock in/out
-- `GET /api/mentor/appointments`: mentor-only appointments for today
+It stores:
 
-`src/middleware.ts` protects `/dashboard/*`, `/mentor/*`, and `/admin/*` by requiring a valid token. Role and admin authorization are enforced in API routes and page-level client gates.
+- `OtpCode`: short-lived email verification codes, failed-attempt count, and use state.
+- `Guest`: public guest visit records.
+- `KioskStatus`: the singleton open/closed state.
+- `AppSetting`: the salted admin PIN hash.
+- `Shift`: mentor clock-in/out records keyed by the OS4 mentor ID.
+- `Checkin`: appointment check-ins keyed by the OS4 booking ID.
 
-## Environment Variables
+### OS4 database
 
-Use `.env.local.example` as the committed template and do not commit `.env`.
-
-Required for local app behavior:
-
-```bash
-DATABASE_URL="postgresql://postgres:password@localhost:5432/checkin"
-JWT_SECRET="development-secret"
-```
-
-Required for sending check-in emails:
-
-```bash
-RESEND_API_KEY="your-resend-api-key"
-RESEND_FROM_EMAIL="onboarding@resend.dev"
-```
-
-Optional:
-
-```bash
-CHECKIN_NOTIFICATION_RECIPIENT="test-recipient@example.com"
-```
-
-If `CHECKIN_NOTIFICATION_RECIPIENT` is set, check-in emails are routed there instead of the mentor email. This is useful with seeded fake mentor emails. If Resend is not configured, the app logs a warning and skips email without failing check-in.
-
-## Data Model
-
-Prisma models:
+`lib/os4-prisma.ts` uses `OS4_DATABASE_URL`. The schema in `prisma-os4/schema.prisma` mirrors only the OS4 models required by this app:
 
 - `User`
-  - `role`: `student`, `mentor`, or `admin`
-  - `mentorType`: `CONSULTATION` or `LAB` for mentors
-- `OtpCode`
-  - stores one-time 4-digit email codes for student/mentor sign-in
-  - codes expire 10 minutes after creation and can only be used once
-  - tracks failed attempts and locks verification after 5 wrong codes
-- `Guest`
-  - standalone public guest visit log, separate from authenticated users
-- `Timeslot`
-  - belongs to a mentor
-  - stores `date`, `startTime`, and `endTime`
 - `Booking`
-  - belongs to a student, mentor, and timeslot
-  - status enum: `CONFIRMED`, `CANCELLED`, `COMPLETED`
-- `Checkin`
-  - one-to-one with `Booking`
-  - unique `bookingId` prevents two check-ins for the same booking
-- `KioskStatus`
-  - singleton row with `id = "singleton"`
-  - stores open/closed state and timestamps
-- `AppSetting`
-  - stores the salted admin PIN hash
-- `Shift`
-  - belongs to a mentor
-  - records `clockInAt` and optional `clockOutAt`
-  - database index enforces one active shift per mentor
+- `TimeSlot`
+- OS4 role and booking-status enums
 
-Shared date/time logic lives in `lib/date-time.ts`. The app timezone is currently `America/Indiana/Indianapolis`.
+The OS4 client must remain read-only. Do not run migrations against the OS4 schema and do not add create, update, delete, or upsert operations through `os4Prisma`. Schema changes must be coordinated with the OS4 team.
 
-## Authentication And Authorization
+### Cross-database relations
 
-Authentication uses OTP email codes for students and mentors, and email plus PIN for admins. There are no account passwords.
+PostgreSQL cannot enforce foreign keys across the two projects, so cross-database relationships are application-level:
 
-Student/mentor login flow:
+- `Checkin.bookingId` refers to an OS4 `Booking.id`.
+- `Shift.mentorId` refers to an OS4 `User.id`.
+- `legacyMentorId` preserves an older local user identifier for migrated historical shifts.
 
-1. User enters an email at `/login`.
-2. `POST /api/auth/request-link` looks up the user by email and creates a one-time OTP code.
-3. The app emails the 4-digit code.
-4. `POST /api/auth/verify-link` verifies and consumes the code.
-5. The API signs a JWT using `JWT_SECRET`.
-6. The JWT is stored in an httpOnly cookie named `token`.
-7. `UserContext` calls `GET /api/auth/me` on mount to restore the session.
-8. OTP login redirects mentors to `/mentor` and students to `/dashboard`.
+`lib/db/bookings.ts` and `lib/db/shifts.ts` handle operational joins. `lib/db/join.ts` performs bulk enrichment for CSV exports. Missing OS4 records must be handled safely because the kiosk database cannot guarantee that referenced OS4 records still exist.
 
-Admin login flow:
+## Roles and authorization
 
-1. Admin enters email and PIN at `/admin/login`.
-2. `POST /api/admin/login` verifies the user has `role === "admin"`.
-3. The API verifies the submitted PIN against the salted hash in `AppSetting`.
-4. The API signs a JWT and stores it in the `token` cookie.
-5. The admin login page updates `UserContext` immediately before navigating to `/admin/overview`.
+`lib/os4-role.ts` translates OS4 roles:
 
-Server-side helpers:
+| OS4 role | Kiosk role |
+|---|---|
+| `MEMBER` | `student` |
+| `PEER_MENTOR` | `mentor` |
+| `ADMIN` | `admin` |
+| `SUPERVISOR` | `admin` |
 
-- `lib/auth.ts`: signs and verifies JWTs with an 8-hour expiration
-- `lib/otp.ts`: creates and redeems one-time sign-in codes
-- `lib/get-session.ts`: reads the `token` cookie and verifies it
-- `lib/require-admin.ts`: returns the session only when `role === "admin"`
-- `lib/admin-pin.ts`: verifies and updates the shared admin PIN
+Authentication uses a JWT stored in an HTTP-only `token` cookie. Tokens expire after eight hours.
 
-Security boundaries:
+`src/middleware.ts` redirects unauthenticated users and users with the wrong role:
 
-- Student booking APIs require a valid session and only return or mutate records for `session.userId`.
-- Mentor APIs require `session.role === "mentor"`.
-- Admin mutating, settings, and analytics APIs require `requireAdmin()`.
-- Admin pages also show a page-level no-access state for non-admin users.
+- `/dashboard/*` requires `student`.
+- `/mentor/*` requires `mentor`.
+- `/admin/*` requires `admin`, except the staff login page.
 
-## Check-In Flow
+Middleware is only the first boundary. API routes must still enforce ownership and roles using `getSession()` or `requireAdmin()`.
 
-When a student clicks "Check In":
+## Authentication workflows
 
-1. The dashboard POSTs to `/api/bookings/[id]/checkin`.
-2. The API checks for a valid session.
-3. The API checks that the kiosk is open.
-4. The API loads the booking with mentor, student, timeslot, and checkin.
-5. The API rejects:
-   - missing session with `401`
-   - closed kiosk with `403`
-   - missing booking with `404`
-   - wrong student with `403`
-   - already checked in with `400`
-   - non-confirmed booking with `400`
-6. The API creates the `Checkin`.
-7. The API attempts to send a Resend email.
-8. Email errors are logged but do not fail the check-in response.
+### Student and mentor OTP
 
-The database also enforces one check-in per booking with a unique `bookingId` constraint.
+1. The user enters an email at `/login`.
+2. `POST /api/auth/request-otp` looks up the email in OS4.
+3. Admin and supervisor accounts are directed to the staff login.
+4. A four-digit code is generated and stored in the kiosk `OtpCode` table.
+5. Resend delivers the code to the user, or to `OTP_NOTIFICATION_RECIPIENT` when a test override is configured.
+6. `POST /api/auth/verify-otp` validates and consumes the code.
+7. The OS4 role is translated and placed in the signed JWT.
+8. Students go to `/dashboard`; mentors go to `/mentor`.
 
-## Mentor Shift Flow
+OTP codes expire after ten minutes, are single-use, and lock after five incorrect attempts.
 
-Mentors use `/mentor` to clock in and out.
+### Admin login
 
-- `GET /api/mentor/shift` returns `{ activeShift, recentShifts, completedShiftHours }`.
-- `POST /api/mentor/shift` accepts `{ action: "clock_in" | "clock_out" }`.
-- `lib/db/shifts.ts` guards state transitions and maps expected invalid states to clean `400` responses.
-- A database partial unique index prevents more than one active shift for the same mentor.
-- The mentor dashboard displays total hours worked by combining completed shift hours from the API with the live active shift duration.
+1. Staff enter their OS4 email and kiosk PIN at `/admin/login`.
+2. `POST /api/admin/login` confirms the OS4 user is an admin or supervisor.
+3. The submitted PIN is checked against the salted hash in `AppSetting`.
+4. A JWT with the `admin` role is stored in the session cookie.
+5. The user is sent to `/admin/overview`.
 
-## Admin Features
+`ADMIN_PIN` is used only when the settings record does not yet exist and during initial seeding. Admins can change the stored PIN under Settings.
 
-Admins are users with `role === "admin"` and authenticate with email plus the shared admin PIN.
+## Student check-in workflow
 
-Admin kiosk:
+1. `/dashboard` loads confirmed OS4 bookings for the signed-in student.
+2. Kiosk check-in records are attached from the kiosk database.
+3. The client submits `POST /api/bookings/[id]/checkin`.
+4. The handler verifies the session, kiosk state, booking ownership, booking status, check-in window, and duplicate state.
+5. The kiosk database creates a unique `Checkin` record.
+6. A mentor notification is sent through Resend.
 
-- `GET /api/admin/kiosk` is public so student dashboards can know whether check-in is open.
-- `POST /api/admin/kiosk` requires admin.
-- The kiosk state is a singleton row with `id = "singleton"`.
+The check-in succeeds even if the notification later fails. A unique database constraint on `bookingId` prevents duplicate check-ins during concurrent requests.
 
-Admin analytics:
+## Mentor shift workflow
 
-- Check-in analytics support `range=day|week|month`.
-- Mentor analytics return the latest shifts across mentors.
-- The chart UI uses Recharts.
+Mentors use `/mentor` to see today's appointments and manage their shift.
 
-Admin settings:
+- `GET /api/mentor/shift` returns the active shift, recent completed shifts, and completed hours.
+- `POST /api/mentor/shift` accepts `clock_in` or `clock_out`.
+- `lib/db/shifts.ts` validates state transitions.
+- A partial unique database index prevents more than one active shift for a mentor.
+- The UI combines completed hours with the live duration of an active shift.
 
-- Admins can change the shared PIN from `/admin/settings`.
-- The API requires the current PIN before writing a new salted hash.
+Staff can inspect, correct, force-clock-out, or remove shifts through the admin routes.
 
-## Database
+## Admin features
 
-The local database is PostgreSQL. A common local Docker container name has been:
+The admin area includes:
 
-```bash
-checkin-db
-```
+- Overview counts for guests, student check-ins, and active mentors.
+- Check-in analytics grouped by day, week, or month.
+- Guest, student, mentor, and front-desk check-in views.
+- Kiosk open/close controls protected by the admin PIN.
+- Mentor shift correction and force-clock-out tools.
+- Admin PIN changes.
+- CSV exports for check-ins and timesheets.
 
-Start it with:
+Check-in exports accept optional `from` and `to` date keys in `YYYY-MM-DD` format. Timesheet exports accept an optional numeric `mentorId`. Both endpoints require an admin session and enrich kiosk records with OS4 data before generating CSV.
 
-```bash
-docker start checkin-db
-```
+## Route map
 
-Run migrations:
+### Public and user routes
 
-```bash
-npx prisma migrate dev
-```
+- `GET /api/health`: checks both database connections and reports `ok`, `degraded`, or `down`.
+- `POST /api/auth/request-otp`: sends a student or mentor OTP.
+- `POST /api/auth/verify-otp`: verifies an OTP and starts a session.
+- `POST /api/auth/logout`: clears the session cookie.
+- `GET /api/auth/me`: returns the current session.
+- `POST /api/guest`: records a guest visit.
+- `GET /api/bookings`: returns the student's confirmed bookings.
+- `POST /api/bookings/[id]/checkin`: checks the student into a booking.
+- `GET|POST /api/mentor/shift`: reads or changes mentor shift state.
+- `GET /api/mentor/appointments`: returns today's mentor appointments.
 
-Seed test data:
+### Admin routes
 
-```bash
-npx prisma db seed
-```
+- `GET|POST /api/admin/kiosk`: reads or changes kiosk state.
+- `POST /api/admin/login`: authenticates staff.
+- `GET /api/admin/overview`: returns dashboard summary counts.
+- `GET /api/admin/guests`: returns guest history.
+- `GET /api/admin/students`: returns student and booking summaries.
+- `GET /api/admin/mentors`: returns mentor and hour summaries.
+- `GET|POST /api/admin/checkin`: supports front-desk check-in.
+- `POST /api/admin/settings/pin`: changes the shared PIN.
+- `GET /api/admin/analytics/checkins`: returns chart buckets.
+- `GET /api/admin/analytics/mentors`: returns recent mentor shifts.
+- `GET /api/admin/shifts`: lists shifts or returns current mentor shift status.
+- `PATCH|DELETE /api/admin/shifts/[id]`: corrects or removes a shift.
+- `POST /api/admin/shifts/clockout`: force-clocks out a mentor.
+- `GET /api/admin/export/checkins`: downloads check-ins as CSV.
+- `GET /api/admin/export/timesheets`: downloads shifts as CSV.
 
-Open Prisma Studio:
+## Error and degraded-state behavior
 
-```bash
-npx prisma studio
-```
+- `src/app/error.tsx` provides a retryable fallback for unhandled React errors.
+- `src/app/not-found.tsx` provides the branded 404 page.
+- The landing page displays a retryable system-unavailable state when kiosk status cannot be loaded.
+- `/api/health` catches individual database failures and never treats one failed connection as a successful full-health result.
+- Expected authentication, validation, and state errors return structured JSON rather than framework error pages.
 
-The seed creates:
+## Date and time handling
 
-- 3 mentors
-- 5 students
-- 1 admin user
-- 1 kiosk singleton row
-- 6 timeslots
-- 6 confirmed bookings
-- sample historical mentor shifts
+The application timezone is `America/Indiana/Indianapolis`. Shared day boundaries and date keys come from `lib/date-time.ts`; do not replace them with server-local date calculations. This matters for analytics, check-in windows, exports, and "today" queries around UTC midnight and daylight-saving transitions.
 
-The seed uses `upsert` for users and the kiosk singleton, and it clears/recreates seeded bookings, timeslots, check-ins, and shifts for seeded users.
+## Development process
 
-## Development Commands
+When changing the application:
 
-Install dependencies:
+1. Identify which database owns the affected data.
+2. Put reusable database access in `lib/db` rather than duplicating cross-database joins in routes.
+3. Keep OS4 access read-only.
+4. Enforce authentication and ownership in the API, even when middleware already protects the page.
+5. Keep email delivery from invalidating an otherwise successful check-in.
+6. Update `.env.local.example` when configuration changes.
+7. Update this document when architecture or workflows change.
+8. Run TypeScript, ESLint, and a production build before handoff.
 
-```bash
-pnpm install
-```
-
-Start dev server:
-
-```bash
-pnpm dev
-```
-
-Run TypeScript checks:
+The standard verification commands are:
 
 ```bash
 npx tsc --noEmit
+npx eslint .
+npx next build
 ```
 
-Run lint:
+For changes to user flows, also run the app and verify the affected routes and redirects in a browser.
 
-```bash
-npm run lint
-```
+## Known limitations and follow-up work
 
-Run Prisma generate:
-
-```bash
-npx prisma generate
-```
-
-Check migration status:
-
-```bash
-npx prisma migrate status
-```
-
-## Known Notes
-
-- The project uses pnpm. `npm install` previously caused issues with the existing pnpm workspace layout.
-- Prisma is pinned to version 6 because the current schema uses the Prisma 6 datasource `url = env("DATABASE_URL")` format.
-- Next 16 warns that `middleware` is deprecated in favor of `proxy`, but `src/middleware.ts` is currently working for route protection.
-- Production builds may need network access for `next/font` Google font fetching unless fonts are changed or self-hosted.
-- Prisma currently warns that `package.json#prisma` seed config is deprecated for Prisma 7; this is not blocking in Prisma 6.
+- Expired `OtpCode` records are not deleted automatically. Add a scheduled cleanup for expired records older than the chosen retention period.
+- Local development currently depends on the OS4 database being available separately.
+- Test-recipient email overrides must be cleared before production delivery.
+- The OS4 schema mirror must be updated manually when relevant OS4 models change.
+- Next.js warns that the `middleware` convention is deprecated in favor of `proxy`; route protection currently works but should be migrated.
+- Dependency advisories should be reviewed before each production deployment.
