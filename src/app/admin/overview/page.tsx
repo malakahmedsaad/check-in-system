@@ -73,6 +73,25 @@ function formatDuration(durationHours: number | null, clockOutAt: string | null)
   return `${durationHours.toFixed(1)} hours`;
 }
 
+function DownloadIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    >
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </svg>
+  );
+}
+
 export default function AdminOverviewPage() {
   const { logout } = useUser();
   const [range, setRange] = useState<AnalyticsRange>("week");
@@ -82,6 +101,11 @@ export default function AdminOverviewPage() {
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [isCheckinsLoading, setIsCheckinsLoading] = useState(true);
   const [isShiftsLoading, setIsShiftsLoading] = useState(true);
+  const [exporting, setExporting] = useState<"checkins" | "timesheets" | null>(
+    null,
+  );
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -246,6 +270,69 @@ export default function AdminOverviewPage() {
     };
   }, [checkins, range]);
 
+  async function downloadCsv(endpoint: string, filename: string) {
+    setError(null);
+
+    try {
+      const response = await fetch(endpoint, { credentials: "include" });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          await logout();
+          return;
+        }
+
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? `Unable to export ${filename}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (downloadError) {
+      setError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : `Unable to export ${filename}`,
+      );
+    }
+  }
+
+  async function exportCheckins() {
+    setExporting("checkins");
+    const params = new URLSearchParams();
+    if (exportFrom) params.set("from", exportFrom);
+    if (exportTo) params.set("to", exportTo);
+    const query = params.toString();
+
+    try {
+      await downloadCsv(
+        `/api/admin/export/checkins${query ? `?${query}` : ""}`,
+        "checkins.csv",
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function exportTimesheets() {
+    setExporting("timesheets");
+
+    try {
+      await downloadCsv("/api/admin/export/timesheets", "timesheets.csv");
+    } finally {
+      setExporting(null);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="rounded-2xl bg-gradient-to-r from-sky-700 via-indigo-700 to-blue-800 p-6 shadow-lg">
@@ -307,6 +394,69 @@ export default function AdminOverviewPage() {
           <p className="mt-3 text-3xl font-bold text-slate-900">
             {isSummaryLoading ? "-" : summary?.totalMentorsClockedIn ?? 0}
           </p>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">
+              Export admin data
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Download check-in and mentor timesheet records as CSV files.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div className="flex gap-3">
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  From
+                </span>
+                <input
+                  type="date"
+                  value={exportFrom}
+                  max={exportTo || undefined}
+                  onChange={(event) => setExportFrom(event.target.value)}
+                  className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  To
+                </span>
+                <input
+                  type="date"
+                  value={exportTo}
+                  min={exportFrom || undefined}
+                  onChange={(event) => setExportTo(event.target.value)}
+                  className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              disabled={exporting !== null}
+              onClick={exportCheckins}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <DownloadIcon />
+              {exporting === "checkins"
+                ? "Exporting..."
+                : "Export check-ins (CSV)"}
+            </button>
+            <button
+              type="button"
+              disabled={exporting !== null}
+              onClick={exportTimesheets}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <DownloadIcon />
+              {exporting === "timesheets"
+                ? "Exporting..."
+                : "Export timesheets (CSV)"}
+            </button>
+          </div>
         </div>
       </section>
 
