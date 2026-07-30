@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/.pnpm-store
 /.pnp
 .pnp.*
 .yarn/*
@@ -33,6 +34,7 @@ yarn-error.log*
 # env files 
 .env*
 !.env.local.example
+!.env.docker.example
 
 # vercel
 .vercel

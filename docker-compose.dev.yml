@@ -1,0 +1,19 @@
+# Development override — runs only the kiosk database locally.
+# Use this when developing the Next.js app outside Docker (pnpm dev).
+# docker compose -f docker-compose.dev.yml up
+
+services:
+  kiosk-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kioskuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: kiosk
+    volumes:
+      - kiosk-db-data-dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  kiosk-db-data-dev:

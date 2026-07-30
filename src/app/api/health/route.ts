@@ -39,6 +39,12 @@ export async function GET() {
     status,
     kiosk_db: kioskDatabase,
     os4_db: os4Database,
+    ...(os4Database === "error"
+      ? {
+          warning:
+            "OS4 database is unavailable. The kiosk API is running, but OS4-backed features will not work.",
+        }
+      : {}),
     timestamp: new Date().toISOString(),
   });
 }

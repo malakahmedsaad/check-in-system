@@ -1,226 +1,147 @@
-# Kiosk App — Local Setup Guide
+# Kiosk App — Local Setup and Handoff
 
-This guide walks through running the Kiosk App on a local computer for the first time. Complete the steps in order. For architecture and development details, see `PROJECT_NOTES.md`.
+This guide is for someone who wants to run the project on their own device. For architecture, workflows, and development decisions, see `PROJECT_NOTES.md`.
 
-## 1. Install the required software
+## Prerequisites
 
-Install:
-
-- Git
-- Node.js 20 or newer
+- Node.js compatible with Next.js 16
 - pnpm
-- PostgreSQL, unless you are using a hosted Neon database
-- Access to the separate OS4 PostgreSQL database
-- A Resend account for sending login codes and notifications
+- A writable kiosk PostgreSQL database
+- Read-only access to the OS4 PostgreSQL database
+- A Resend account with a verified sender
 
-Confirm that Git and Node.js are available:
-
-```bash
-git --version
-node --version
-```
-
-Enable pnpm through Node's Corepack:
-
-```bash
-corepack enable
-corepack prepare pnpm@latest --activate
-pnpm --version
-```
-
-## 2. Download the project
-
-Clone the repository and enter its directory:
+## Get the project
 
 ```bash
 git clone https://github.com/malakahmedsaad/check-in-system.git
 cd check-in-system
-```
-
-If the repository has already been cloned, update it instead:
-
-```bash
-git checkout main
-git pull origin main
-```
-
-## 3. Install dependencies
-
-Run:
-
-```bash
 pnpm install
 ```
 
-Use pnpm rather than npm because the repository contains `pnpm-lock.yaml`.
+The repository uses `pnpm-lock.yaml`; use pnpm so dependency resolution matches the committed lockfile.
 
-## 4. Prepare the kiosk database
+## Configure the environment
 
-The kiosk database stores OTP codes, guest visits, kiosk status, the admin PIN hash, mentor shifts, and check-ins.
-
-You can use either:
-
-- A hosted PostgreSQL database such as Neon.
-- A local PostgreSQL database.
-
-For Neon, create a PostgreSQL project and copy its connection string from the Neon dashboard.
-
-For a local PostgreSQL installation, create an empty database:
-
-```bash
-createdb checkin
-```
-
-A typical local connection URL looks like:
-
-```text
-postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/checkin
-```
-
-Do not copy that example literally. Replace the username and password with your PostgreSQL credentials.
-
-## 5. Prepare the OS4 database connection
-
-The app does not create or migrate the OS4 database. OS4 is a separate project containing users, roles, appointments, and timeslots.
-
-Before continuing:
-
-1. Obtain the OS4 PostgreSQL connection details from the OS4 team.
-2. Ask for a dedicated read-only database user.
-3. If OS4 runs in Docker locally, start the OS4 project and confirm its database container is running.
-4. Confirm that the OS4 database is reachable from this computer.
-
-Do not run kiosk migrations against OS4.
-
-## 6. Create the environment file
-
-On macOS or Linux:
+Copy the committed template:
 
 ```bash
 cp .env.local.example .env
 ```
 
-On Windows PowerShell:
+Fill in every required value in `.env`. The template explains where each value comes from and its expected format.
 
-```powershell
-Copy-Item .env.local.example .env
-```
+The two database URLs serve different purposes:
 
-Open `.env` in a text editor and replace every required placeholder.
+- `DATABASE_URL` connects to the kiosk database, which this app owns and migrates.
+- `OS4_DATABASE_URL` connects to the separate OS4 database and must use read-only credentials.
 
-At minimum, configure:
+For local testing, `CHECKIN_NOTIFICATION_RECIPIENT` and `OTP_NOTIFICATION_RECIPIENT` can redirect messages to controlled inboxes. Leave both empty when messages should go to their real recipients.
 
-```dotenv
-DATABASE_URL="<kiosk-database-connection-url>"
-OS4_DATABASE_URL="<read-only-os4-database-connection-url>"
-JWT_SECRET="<random-secret-at-least-32-characters>"
-ADMIN_PIN="<secure-numeric-pin>"
-RESEND_API_KEY="<resend-api-key>"
-RESEND_FROM_EMAIL="<verified-sender-address>"
-```
+## Prepare the databases
 
-Generate a suitable JWT secret with:
-
-```bash
-openssl rand -base64 48
-```
-
-Optional email overrides:
-
-```dotenv
-CHECKIN_NOTIFICATION_RECIPIENT=
-OTP_NOTIFICATION_RECIPIENT=
-```
-
-During testing, place a controlled email address after `=` to redirect messages. Leave the values empty when emails should go to the actual OS4 users.
-
-Next.js normally sets `NODE_ENV` automatically. Do not set it manually unless your runtime specifically requires it.
-
-Never commit `.env`.
-
-## 7. Generate both Prisma clients
-
-The app needs one Prisma client for the kiosk database and one for the read-only OS4 database.
-
-Run:
+Generate both Prisma clients:
 
 ```bash
 npm run prisma:generate:all
 ```
 
-This command generates:
-
-1. The normal kiosk client from `prisma/schema.prisma`.
-2. The OS4 client from `prisma-os4/schema.prisma`.
-
-If this step reports a missing environment variable, return to Step 6 and check `.env`.
-
-## 8. Apply kiosk database migrations
-
-Run:
+Apply committed migrations to the kiosk database:
 
 ```bash
 npx prisma migrate deploy
 ```
 
-This applies the committed migrations to `DATABASE_URL`.
-
-Check the result:
-
-```bash
-npx prisma migrate status
-```
-
-The status should report that the kiosk database schema is up to date.
-
-Do not add `--schema=prisma-os4/schema.prisma` to either migration command.
-
-## 9. Seed required kiosk records
-
-Run:
+Seed the kiosk singleton and initial admin PIN:
 
 ```bash
 npx prisma db seed
 ```
 
-The seed:
+The seed reads the initial PIN from `ADMIN_PIN`. It does not seed OS4 users, bookings, or timeslots.
 
-- Creates the singleton kiosk-status record if it does not exist.
-- Creates the initial salted admin PIN record using `ADMIN_PIN`.
+Never run Prisma migrations against `prisma-os4/schema.prisma`; that schema is a read-only mirror.
 
-It does not create OS4 users, appointments, mentors, or timeslots.
-
-## 10. Start the development server
-
-Run:
+## Run the app
 
 ```bash
 pnpm dev
 ```
 
-Wait until the terminal reports:
+Open [http://localhost:3000](http://localhost:3000).
 
-```text
-Local: http://localhost:3000
-```
+Useful entry points:
 
-Keep this terminal open while using the app.
+| User | URL |
+|---|---|
+| Public kiosk | `/` |
+| Student or peer mentor login | `/login` |
+| Guest questionnaire | `/guest` |
+| Staff login | `/admin/login` |
 
-## 11. Verify both database connections
+## Running with Docker (recommended for handoff)
 
-Open a second terminal in the project directory and run:
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine with Compose
+- The separate OS4 database running and accessible
+- A Resend account with a verified sender email
+
+### OS4 database dependency
+
+This app reads user and booking data from the OS4 project database. **OS4 is a separate project and must be running before this app will work.** This Compose project intentionally does not create or manage it.
+
+If OS4 is running on the same machine:
+
+1. Find OS4's published database port with `docker ps`.
+2. In `OS4_DATABASE_URL`, use `host.docker.internal` instead of `localhost`, for example:
+   `postgresql://postgres:PASSWORD@host.docker.internal:PORT/schedule_optimizer?schema=public`
+
+If OS4 is hosted elsewhere, use its connection string directly. Prefer a read-only OS4 database user.
+
+### Setup steps
+
+1. Clone this repository.
+2. Copy the template: `cp .env.docker.example .env`
+3. Fill in every value in `.env`, especially `OS4_DATABASE_URL`, `JWT_SECRET`, `ADMIN_PIN`, and both occurrences of the kiosk database password.
+4. Run `docker compose up --build`.
+5. Open [http://localhost:3000](http://localhost:3000).
+
+Kiosk migrations and the idempotent seed run automatically whenever the app container starts.
+
+### Useful Docker commands
+
+| Command | What it does |
+|---|---|
+| `docker compose up --build` | Build and start everything |
+| `docker compose up -d` | Start in the background |
+| `docker compose down` | Stop all containers |
+| `docker compose down -v` | Stop and permanently delete kiosk data |
+| `docker compose logs -f kiosk` | Watch app logs |
+| `docker compose logs -f kiosk-db` | Watch database logs |
+| `docker compose exec kiosk-db psql -U kioskuser -d kiosk` | Open the kiosk database shell |
+
+### Data persistence
+
+Kiosk data is stored in the `kiosk-db-data` Docker named volume. It survives `docker compose down` and image rebuilds. Only `docker compose down -v` deletes it.
+
+### Ports used
+
+| Service | Container port | Host port | Purpose |
+|---|---:|---:|---|
+| kiosk app | 3000 | 3000 | Web interface |
+| kiosk-db | 5432 | 5434 | Optional direct database access |
+
+Host port 5434 avoids conflicts with other PostgreSQL containers. Containers connect internally using `kiosk-db:5432`.
+
+## Verify the installation
+
+Check database health:
 
 ```bash
 curl http://localhost:3000/api/health
 ```
 
-On Windows PowerShell, use:
-
-```powershell
-Invoke-RestMethod http://localhost:3000/api/health
-```
-
-A fully working installation returns:
+A fully working installation returns a payload with:
 
 ```json
 {
@@ -231,30 +152,9 @@ A fully working installation returns:
 }
 ```
 
-If the status is `degraded` or `down`, resolve the database error before testing login or appointment flows.
+If OS4 is unavailable, the endpoint still responds and reports `status: "degraded"`, `os4_db: "error"`, and a warning. Kiosk-only database health remains visible instead of crashing the app.
 
-## 12. Open and test the app
-
-Open [http://localhost:3000](http://localhost:3000) in a browser.
-
-Check these pages:
-
-1. `/` displays the kiosk landing page.
-2. `/guest` displays the guest questionnaire.
-3. `/login` displays the student and peer-mentor OTP form.
-4. `/admin/login` displays the staff email and PIN form.
-
-To test student or mentor login, use an email that already exists in the OS4 database. The OTP is sent through Resend or to `OTP_NOTIFICATION_RECIPIENT` when that override is set.
-
-To test staff login:
-
-1. Use an OS4 user whose role is `ADMIN` or `SUPERVISOR`.
-2. Enter the PIN configured through `ADMIN_PIN` during seeding.
-3. After signing in, the app should open `/admin/overview`.
-
-## 13. Run verification checks
-
-Before considering the local setup complete, run:
+Run the project checks:
 
 ```bash
 npx tsc --noEmit
@@ -262,85 +162,40 @@ npx eslint .
 npx next build
 ```
 
-All three commands should exit successfully.
+## Database tools
 
-The Next.js build currently prints a warning that the `middleware` convention is deprecated. That warning is known and does not prevent the build from succeeding.
-
-## 14. Stop and restart the app
-
-Stop the development server by pressing:
-
-```text
-Ctrl+C
-```
-
-For later sessions, the normal startup process is:
-
-```bash
-cd check-in-system
-pnpm install
-pnpm dev
-```
-
-You do not need to rerun migrations or seeding every time. Run migrations after pulling commits that contain new files under `prisma/migrations`.
-
-## Database inspection
-
-To inspect the kiosk database:
+Open the kiosk database in Prisma Studio:
 
 ```bash
 npx prisma studio
 ```
 
-To inspect OS4 through the read-only schema:
+Open the OS4 database with its read-only schema:
 
 ```bash
 npx prisma studio --schema=prisma-os4/schema.prisma
 ```
 
-Prisma Studio opens in a browser. Do not edit OS4 records through this project.
-
-## Troubleshooting
-
-### The kiosk database does not connect
-
-- Check `DATABASE_URL`.
-- Confirm PostgreSQL or the Neon project is running.
-- Confirm network access and SSL settings required by the provider.
-- Run `npx prisma migrate status`.
-
-### The OS4 database does not connect
-
-- Check `OS4_DATABASE_URL`.
-- Confirm the OS4 project or Docker container is running.
-- Confirm the read-only user can connect.
-- Regenerate the OS4 client with `npm run prisma:generate:os4`.
-
-### Prisma types or generated clients are missing
-
-Run:
+Create a new kiosk migration during development:
 
 ```bash
-npm run prisma:generate:all
+npx prisma migrate dev
 ```
 
-Then restart the development server.
+## Admin PIN
 
-### OTP or notification emails do not arrive
+The initial PIN comes from `ADMIN_PIN` when the kiosk database is seeded. The application stores a salted hash in the `AppSetting` record with ID `"admin"`. After signing in, an administrator can change it under Settings → Change PIN.
 
-- Check `RESEND_API_KEY`.
-- Confirm `RESEND_FROM_EMAIL` is verified in Resend.
-- Check the Resend delivery logs.
-- During development, set the appropriate test-recipient override.
+## Common problems
 
-### Admin login fails
-
-- Confirm the email belongs to an OS4 `ADMIN` or `SUPERVISOR`.
-- Confirm the kiosk database was seeded.
-- Confirm the PIN matches the value used when the `AppSetting` record was first created.
-- If an admin later changed the PIN in Settings, use that newer PIN instead of the `.env` value.
+- If `/api/health` reports `kiosk_db: "error"`, verify `DATABASE_URL`, network access, and that kiosk migrations have been applied.
+- If it reports `os4_db: "error"`, verify `OS4_DATABASE_URL` and ensure the separate OS4 database or local container is running.
+- If Prisma client types are missing, rerun `npm run prisma:generate:all`.
+- If email delivery fails, verify the Resend API key, verified sender, and test-recipient overrides.
+- A Next.js warning about `middleware` being deprecated is currently expected and does not prevent the app from running.
 
 ## Contact
 
-Built by: Malak Ahmed Saad  
+Built by: Malak Mohamed
 Repository: [https://github.com/malakahmedsaad/check-in-system](https://github.com/malakahmedsaad/check-in-system)
+Email: mohamedm@berea.edu

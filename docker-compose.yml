@@ -1,0 +1,73 @@
+# ============================================================
+# KIOSK APP — Docker Compose
+# ============================================================
+# This file runs the kiosk app and its own database.
+#
+# PREREQUISITE — OS4 DATABASE:
+# This app also requires access to the OS4 project database.
+# OS4 is a SEPARATE project and is NOT included here.
+# Before running this app, ensure OS4's database is running
+# and set OS4_DATABASE_URL in your .env file to point to it.
+#
+# If OS4 is running in Docker on this same machine, use:
+#   OS4_DATABASE_URL=postgresql://user:pass@host.docker.internal:PORT/dbname
+# (Use host.docker.internal instead of localhost when OS4 is
+#  on the host machine and this app is inside Docker)
+#
+# See HANDOFF.md for full setup instructions.
+# ============================================================
+
+services:
+  kiosk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      OS4_DATABASE_URL: ${OS4_DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_PIN: ${ADMIN_PIN}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      CLIENT_URL: ${CLIENT_URL}
+      CHECKIN_NOTIFICATION_RECIPIENT: ${CHECKIN_NOTIFICATION_RECIPIENT:-}
+      OTP_NOTIFICATION_RECIPIENT: ${OTP_NOTIFICATION_RECIPIENT:-}
+      NODE_ENV: production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kiosk-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kiosk-network
+
+  kiosk-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kioskuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-kiosk}
+    volumes:
+      - kiosk-db-data:/var/lib/postgresql/data
+    ports:
+      # Mapped to 5434 on the host to avoid other Postgres containers.
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kioskuser} -d ${POSTGRES_DB:-kiosk}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - kiosk-network
+
+volumes:
+  kiosk-db-data:
+    # Named volume: data persists across container restarts and rebuilds.
+
+networks:
+  kiosk-network:
+    driver: bridge
