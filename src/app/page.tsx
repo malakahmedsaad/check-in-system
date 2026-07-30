@@ -94,39 +94,76 @@ function OptionIcon({ icon }: { icon: LandingOption["icon"] }) {
   );
 }
 
+function UnavailableIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-10 w-10"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+    >
+      <path d="M17.5 19H7a5 5 0 0 1-.7-9.95A7 7 0 0 1 19.8 11.5 3.8 3.8 0 0 1 18 19" />
+      <path d="m9 12 6 6" />
+      <path d="m15 12-6 6" />
+    </svg>
+  );
+}
+
+async function fetchKioskStatus() {
+  const response = await fetch("/api/admin/kiosk", { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error("Unable to load kiosk status");
+  }
+
+  return (await response.json()) as KioskStatus;
+}
+
 export default function Home() {
   const [status, setStatus] = useState<KioskStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  function retryKioskStatus() {
+    setIsLoading(true);
+    setError("");
+    void fetchKioskStatus()
+      .then((data) => {
+        setStatus(data);
+      })
+      .catch(() => {
+        setStatus(null);
+        setError("Unable to load kiosk status");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }
+
   useEffect(() => {
     let isMounted = true;
 
-    async function loadKioskStatus() {
-      try {
-        const response = await fetch("/api/admin/kiosk");
-
-        if (!response.ok) {
-          throw new Error("Unable to load kiosk status");
-        }
-
-        const data = (await response.json()) as KioskStatus;
-
+    void fetchKioskStatus()
+      .then((data) => {
         if (isMounted) {
           setStatus(data);
         }
-      } catch {
+      })
+      .catch(() => {
         if (isMounted) {
+          setStatus(null);
           setError("Unable to load kiosk status");
         }
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) {
           setIsLoading(false);
         }
-      }
-    }
-
-    loadKioskStatus();
+      });
 
     return () => {
       isMounted = false;
@@ -163,19 +200,23 @@ export default function Home() {
               Checking kiosk status...
             </p>
           ) : error ? (
-            <div className="max-w-md rounded-2xl border border-red-200 bg-red-100 p-6 text-center shadow-sm">
-              <h1 className="text-2xl font-bold text-red-800">
-                We could not load kiosk status
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <UnavailableIcon />
+              </div>
+              <h1 className="mt-6 text-xl font-semibold text-slate-700">
+                System temporarily unavailable
               </h1>
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                Please try again in a moment or ask staff for help.
+                Please check back shortly or contact front desk staff.
               </p>
-              <Link
-                href="/admin/login"
-                className="mt-8 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              <button
+                type="button"
+                onClick={retryKioskStatus}
+                className="mt-8 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
-                Staff sign in
-              </Link>
+                Retry
+              </button>
             </div>
           ) : !isOpen ? (
             <div className="max-w-md rounded-2xl border border-red-200 bg-red-100 p-6 text-center shadow-sm">
