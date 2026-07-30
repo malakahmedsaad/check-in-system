@@ -7,9 +7,13 @@ import { prisma } from "../../../../../lib/prisma";
 import { requireAdmin } from "../../../../../lib/require-admin";
 
 const KIOSK_STATUS_ID = "singleton";
-const KIOSK_PIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const KIOSK_PIN_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const KIOSK_PIN_LOCKOUT_MS = 60 * 1000;
 const KIOSK_PIN_MAX_ATTEMPTS = 5;
-const kioskPinAttempts = new Map<string, { count: number; resetAt: number }>();
+const kioskPinAttempts = new Map<
+  string,
+  { count: number; resetAt: number; lockedUntil: number | null }
+>();
 
 function serializeStatus(status: {
   isOpen: boolean;
@@ -42,16 +46,26 @@ function isRateLimited(key: string) {
   const now = Date.now();
   const current = kioskPinAttempts.get(key);
 
+  if (current?.lockedUntil && current.lockedUntil > now) {
+    return true;
+  }
+
   if (!current || current.resetAt <= now) {
     kioskPinAttempts.set(key, {
       count: 1,
       resetAt: now + KIOSK_PIN_RATE_LIMIT_WINDOW_MS,
+      lockedUntil: null,
     });
     return false;
   }
 
   current.count += 1;
-  return current.count > KIOSK_PIN_MAX_ATTEMPTS;
+  if (current.count > KIOSK_PIN_MAX_ATTEMPTS) {
+    current.lockedUntil = now + KIOSK_PIN_LOCKOUT_MS;
+    return true;
+  }
+
+  return false;
 }
 
 function clearRateLimit(key: string) {
@@ -115,8 +129,11 @@ export async function POST(request: Request) {
     // SECURITY: Rate limits kiosk PIN attempts so a logged-in device cannot be used to brute-force the PIN.
     if (isRateLimited(rateLimitKey)) {
       return NextResponse.json(
-        { error: "Too many attempts. Try again later." },
-        { status: 429 },
+        { error: "Too many attempts. Try again in 1 minute." },
+        {
+          status: 429,
+          headers: { "Retry-After": "60" },
+        },
       );
     }
 

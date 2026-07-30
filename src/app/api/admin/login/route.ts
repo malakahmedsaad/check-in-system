@@ -7,25 +7,39 @@ import { signToken } from "../../../../../lib/auth";
 import { os4Prisma } from "../../../../../lib/os4-prisma";
 import { isAdmin, translateRole } from "../../../../../lib/os4-role";
 
-const ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const ADMIN_LOGIN_LOCKOUT_MS = 60 * 1000;
 const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const loginAttempts = new Map<
+  string,
+  { count: number; resetAt: number; lockedUntil: number | null }
+>();
 
 function isRateLimited(key: string) {
   const now = Date.now();
   const current = loginAttempts.get(key);
 
+  if (current?.lockedUntil && current.lockedUntil > now) {
+    return true;
+  }
+
   if (!current || current.resetAt <= now) {
     loginAttempts.set(key, {
       count: 1,
       resetAt: now + ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS,
+      lockedUntil: null,
     });
     return false;
   }
 
   current.count += 1;
-  return current.count > ADMIN_LOGIN_MAX_ATTEMPTS;
+  if (current.count > ADMIN_LOGIN_MAX_ATTEMPTS) {
+    current.lockedUntil = now + ADMIN_LOGIN_LOCKOUT_MS;
+    return true;
+  }
+
+  return false;
 }
 
 function clearRateLimit(key: string) {
@@ -67,8 +81,11 @@ export async function POST(request: Request) {
   // SECURITY: Rate limits admin PIN attempts to make brute-force guessing impractical.
   if (isRateLimited(rateLimitKey)) {
     return NextResponse.json(
-      { error: "Too many attempts. Try again later." },
-      { status: 429 },
+      { error: "Too many attempts. Try again in 1 minute." },
+      {
+        status: 429,
+        headers: { "Retry-After": "60" },
+      },
     );
   }
 
