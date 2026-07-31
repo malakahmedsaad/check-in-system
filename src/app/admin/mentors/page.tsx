@@ -31,6 +31,15 @@ type MentorShiftStatus = {
   isClockedIn: boolean;
 };
 
+type Semester = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  hoursPerMentor?: Array<{ mentorId: number; totalHours: number }>;
+};
+
 type EditState = {
   mentorId: number;
   shiftId: string;
@@ -165,6 +174,8 @@ export default function AdminMentorsPage() {
   const { logout } = useUser();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [shiftStatuses, setShiftStatuses] = useState<MentorShiftStatus[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState("");
   const [shiftsByMentor, setShiftsByMentor] = useState<
     Record<string, Shift[]>
   >({});
@@ -250,19 +261,22 @@ export default function AdminMentorsPage() {
 
     async function loadPage() {
       try {
-        const [mentorsResponse, statusesResponse] = await Promise.all([
+        const [mentorsResponse, statusesResponse, semestersResponse] = await Promise.all([
           fetch("/api/admin/mentors", { credentials: "include" }),
           fetch("/api/admin/shifts", { credentials: "include" }),
+          fetch("/api/admin/semesters", { credentials: "include" }),
         ]);
 
         if (!isMounted) {
           return;
         }
 
-        if (!mentorsResponse.ok || !statusesResponse.ok) {
-          const unauthorizedResponse = [mentorsResponse, statusesResponse].find(
-            (response) => response.status === 401 || response.status === 403,
-          );
+        if (!mentorsResponse.ok || !statusesResponse.ok || !semestersResponse.ok) {
+          const unauthorizedResponse = [
+            mentorsResponse,
+            statusesResponse,
+            semestersResponse,
+          ].find((response) => response.status === 401 || response.status === 403);
 
           if (unauthorizedResponse) {
             await logout();
@@ -276,6 +290,7 @@ export default function AdminMentorsPage() {
         setShiftStatuses(
           (await statusesResponse.json()) as MentorShiftStatus[],
         );
+        setSemesters((await semestersResponse.json()) as Semester[]);
       } catch (loadError) {
         if (isMounted) {
           setError(
@@ -323,6 +338,26 @@ export default function AdminMentorsPage() {
         (mentor) => mentor.isClockedIn && mentor.mostRecentShift,
       ),
     [shiftStatuses],
+  );
+
+  const activeSemester = useMemo(
+    () => semesters.find((semester) => semester.isActive) ?? null,
+    [semesters],
+  );
+  const activeSemesterHoursByMentor = useMemo(
+    () =>
+      new Map(
+        (activeSemester?.hoursPerMentor ?? []).map((entry) => [
+          entry.mentorId,
+          entry.totalHours,
+        ]),
+      ),
+    [activeSemester],
+  );
+  const selectedSemester = useMemo(
+    () =>
+      semesters.find((semester) => semester.id === selectedSemesterId) ?? null,
+    [selectedSemesterId, semesters],
   );
 
   async function toggleTimesheet(mentorId: number) {
@@ -577,6 +612,11 @@ export default function AdminMentorsPage() {
                           {formatElapsed(activeShift.clockInAt, now)}
                         </span>
                       </p>
+                      <p className="mt-1 text-sm font-medium text-indigo-700">
+                        {activeSemester
+                          ? `${(activeSemesterHoursByMentor.get(mentor.id) ?? 0).toFixed(1)} hours in ${activeSemester.name}`
+                          : "No active semester"}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -652,20 +692,51 @@ export default function AdminMentorsPage() {
       </section>
 
       <section>
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-slate-950">
-            Full timesheets
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Expand a mentor to edit or remove individual shifts.
-          </p>
+        <div className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">
+              Full timesheets
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Expand a mentor to edit or remove individual shifts.
+            </p>
+          </div>
+          <label className="w-full text-sm font-medium text-slate-700 sm:max-w-xs">
+            Filter by semester
+            <select
+              value={selectedSemesterId}
+              onChange={(event) => {
+                setSelectedSemesterId(event.target.value);
+                setEditState(null);
+                setDeleteShiftId(null);
+                setRowError(null);
+              }}
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              <option value="">All time</option>
+              {semesters.map((semester) => (
+                <option key={semester.id} value={semester.id}>
+                  {semester.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="space-y-3">
           {!isLoading
             ? filteredMentors.map((mentor) => {
                 const isExpanded = expandedIds.has(mentor.id);
                 const shifts = shiftsByMentor[mentor.id] ?? [];
-                const totalMinutes = getTotalMinutes(shifts);
+                const filteredShifts = selectedSemester
+                  ? shifts.filter((shift) => {
+                      const clockInAt = new Date(shift.clockInAt).getTime();
+                      return (
+                        clockInAt >= new Date(selectedSemester.startDate).getTime() &&
+                        clockInAt <= new Date(selectedSemester.endDate).getTime()
+                      );
+                    })
+                  : shifts;
+                const totalMinutes = getTotalMinutes(filteredShifts);
 
                 return (
                   <article
@@ -698,13 +769,15 @@ export default function AdminMentorsPage() {
                           </p>
                         ) : null}
                         {!loadingShiftIds.has(mentor.id) &&
-                        shifts.length === 0 ? (
+                        filteredShifts.length === 0 ? (
                           <p className="px-5 py-6 text-sm font-medium text-slate-500">
-                            No shifts found.
+                            {selectedSemester
+                              ? `No shifts found in ${selectedSemester.name}.`
+                              : "No shifts found."}
                           </p>
                         ) : null}
                         {!loadingShiftIds.has(mentor.id) &&
-                        shifts.length > 0 ? (
+                        filteredShifts.length > 0 ? (
                           <div className="overflow-x-auto">
                             <table className="min-w-full">
                               <thead className="border-b border-slate-200 bg-slate-50">
@@ -726,7 +799,7 @@ export default function AdminMentorsPage() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
-                                {shifts.map((shift) => {
+                                {filteredShifts.map((shift) => {
                                   const isEditing =
                                     editState?.shiftId === shift.id;
                                   const isDeleting =

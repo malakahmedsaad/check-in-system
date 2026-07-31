@@ -65,6 +65,35 @@ model Shift {
   // A SQL partial unique index allows only one active shift per mentor.
 }
 
+// Semester periods are defined by the admin.
+// Shifts are never deleted on reset — SemesterReset documents each reset event.
+// To compute hours for a semester, filter Shift records by clockInAt between semester.startDate and semester.endDate.
+model Semester {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  createdBy String
+
+  resets SemesterReset[]
+}
+
+// Semester periods are defined by the admin.
+// Shifts are never deleted on reset — SemesterReset documents each reset event.
+// To compute hours for a semester, filter Shift records by clockInAt between semester.startDate and semester.endDate.
+model SemesterReset {
+  id          String   @id @default(cuid())
+  semesterId  String
+  resetAt     DateTime @default(now())
+  resetBy     String
+  resetByName String
+  note        String?
+
+  semester Semester @relation(fields: [semesterId], references: [id])
+}
+
 model Checkin {
   id          String   @id @default(cuid())
   // References OS4 bookings.id (Int) — validated at application level

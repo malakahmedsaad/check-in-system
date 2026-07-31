@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin/guests", label: "Guests" },
   { href: "/admin/students", label: "Students" },
   { href: "/admin/mentors", label: "Mentors" },
+  { href: "/admin/semesters", label: "Semesters" },
   { href: "/admin/settings", label: "Settings" },
 ];
 

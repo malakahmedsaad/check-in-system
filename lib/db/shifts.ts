@@ -120,3 +120,39 @@ export async function getCompletedShiftHoursByMentorId(mentorId: number) {
     );
   }, 0);
 }
+
+export async function getSemesterHoursPerMentor(
+  semesterId: string,
+): Promise<Array<{ mentorId: number; totalHours: number }>> {
+  const semester = await prisma.semester.findUnique({
+    where: { id: semesterId },
+    select: { startDate: true, endDate: true },
+  });
+  if (!semester) throw new Error("Semester not found");
+
+  const shifts = await prisma.shift.findMany({
+    where: {
+      clockInAt: { gte: semester.startDate, lte: semester.endDate },
+      clockOutAt: { not: null },
+    },
+    select: { mentorId: true, clockInAt: true, clockOutAt: true },
+  });
+
+  const hoursByMentor = new Map<number, number>();
+  for (const shift of shifts) {
+    if (!shift.clockOutAt) continue;
+    const hours = Math.max(
+      0,
+      (shift.clockOutAt.getTime() - shift.clockInAt.getTime()) / 3_600_000,
+    );
+    hoursByMentor.set(
+      shift.mentorId,
+      (hoursByMentor.get(shift.mentorId) ?? 0) + hours,
+    );
+  }
+
+  return Array.from(hoursByMentor, ([mentorId, totalHours]) => ({
+    mentorId,
+    totalHours,
+  })).sort((a, b) => b.totalHours - a.totalHours);
+}
