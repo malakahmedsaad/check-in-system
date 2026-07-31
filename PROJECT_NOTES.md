@@ -46,6 +46,7 @@ lib/
   csv.ts                           CSV serialization
   db/bookings.ts                   Cross-database booking/check-in access
   db/shifts.ts                     Cross-database mentor/shift access
+  db/semesters.ts                  Semester periods, activation, and reset audit access
   db/join.ts                       Bulk OS4 enrichment for exports
 
 prisma/
@@ -83,6 +84,8 @@ It stores:
 - `KioskStatus`: the singleton open/closed state.
 - `AppSetting`: the salted admin PIN hash.
 - `Shift`: mentor clock-in/out records keyed by the OS4 mentor ID.
+- `Semester`: named, inclusive reporting periods with one application-managed active period.
+- `SemesterReset`: permanent, denormalized audit records for semester resets.
 - `Checkin`: appointment check-ins keyed by the OS4 booking ID.
 
 ### OS4 database
@@ -175,6 +178,30 @@ Mentors use `/mentor` to see today's appointments and manage their shift.
 
 Staff can inspect, correct, force-clock-out, or remove shifts through the admin routes.
 
+### Semester timesheet workflow
+
+Administrators manage semester periods at `/admin/semesters`.
+
+1. A staff member creates a named period with inclusive `startDate` and
+   `endDate` values. Date-only end dates are normalized to the end of that day.
+2. Activation runs in a kiosk-database transaction: every other semester is
+   marked inactive before the target is activated.
+3. `getSemesterHoursPerMentor()` selects completed shifts whose `clockInAt`
+   falls within the period, groups durations by OS4 mentor ID, and sorts totals
+   descending.
+4. Route handlers enrich those totals with OS4 mentor names and email addresses.
+5. Resetting appends a `SemesterReset` containing the administrator ID,
+   denormalized display name, timestamp, and optional note.
+
+A reset is deliberately non-destructive. It does not archive, update, or delete
+any `Shift` record. Historical totals remain reproducible from the semester date
+range, while `SemesterReset` provides a permanent audit trail.
+
+The admin Mentors page fetches semester summaries alongside shift status. Its
+Full Timesheets dropdown filters already-fetched shifts client-side and
+recalculates the visible total. The Currently Clocked In panel also shows each
+mentor's completed hours in the active semester.
+
 ## Admin features
 
 The admin area includes:
@@ -186,8 +213,13 @@ The admin area includes:
 - Mentor shift correction and force-clock-out tools.
 - Admin PIN changes.
 - CSV exports for check-ins and timesheets.
+- Semester creation, activation, reset auditing, mentor-hour summaries, and CSV exports.
 
 Check-in exports accept optional `from` and `to` date keys in `YYYY-MM-DD` format. Timesheet exports accept an optional numeric `mentorId`. Both endpoints require an admin session and enrich kiosk records with OS4 data before generating CSV.
+
+Semester exports require a `semesterId` and contain three sections: the period
+header, mentor hours with total hours/minutes, and reset history. All semester
+handlers require `requireAdmin()`.
 
 ## Route map
 
@@ -221,6 +253,9 @@ Check-in exports accept optional `from` and `to` date keys in `YYYY-MM-DD` forma
 - `POST /api/admin/shifts/clockout`: force-clocks out a mentor.
 - `GET /api/admin/export/checkins`: downloads check-ins as CSV.
 - `GET /api/admin/export/timesheets`: downloads shifts as CSV.
+- `GET|POST /api/admin/semesters`: lists semester summaries and creates periods.
+- `GET|PATCH /api/admin/semesters/[id]`: returns detailed hours/reset history, activates a period, or appends a reset event.
+- `GET /api/admin/semesters/export?semesterId=...`: downloads semester mentor hours and reset history as CSV.
 
 ## Error and degraded-state behavior
 
@@ -233,6 +268,10 @@ Check-in exports accept optional `from` and `to` date keys in `YYYY-MM-DD` forma
 ## Date and time handling
 
 The application timezone is `America/Indiana/Indianapolis`. Shared day boundaries and date keys come from `lib/date-time.ts`; do not replace them with server-local date calculations. This matters for analytics, check-in windows, exports, and "today" queries around UTC midnight and daylight-saving transitions.
+
+Semester dates represent inclusive calendar boundaries. The semester-hours
+query compares `Shift.clockInAt` with `gte startDate` and `lte endDate`; a shift
+is assigned according to its clock-in time, not its clock-out time.
 
 ## Development process
 

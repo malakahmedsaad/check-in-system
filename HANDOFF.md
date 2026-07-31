@@ -51,6 +51,10 @@ Apply committed migrations to the kiosk database:
 npx prisma migrate deploy
 ```
 
+This includes `20260731120000_add_semester_tracking`, which creates the
+`Semester` and append-only `SemesterReset` tables. Semester resets never delete
+or modify mentor `Shift` records.
+
 Seed the kiosk singleton and initial admin PIN:
 
 ```bash
@@ -77,6 +81,7 @@ Useful entry points:
 | Student or peer mentor login | `/login` |
 | Guest questionnaire | `/guest` |
 | Staff login | `/admin/login` |
+| Semester administration | `/admin/semesters` |
 
 ## Running with Docker (recommended for handoff)
 
@@ -170,6 +175,10 @@ Open the kiosk database in Prisma Studio:
 npx prisma studio
 ```
 
+Use the `Semester` and `SemesterReset` models in Studio to inspect configured
+periods and the permanent reset audit history. A reset is an audit event only;
+do not expect any `Shift` rows to disappear.
+
 Open the OS4 database with its read-only schema:
 
 ```bash
@@ -182,6 +191,22 @@ Create a new kiosk migration during development:
 npx prisma migrate dev
 ```
 
+## Semester administration
+
+Staff manage semester-based mentor timesheets at `/admin/semesters`:
+
+1. Create a named period with inclusive start and end dates.
+2. Activate it. Activating one period automatically deactivates the others.
+3. Review mentor hours calculated from completed shifts whose `clockInAt` is
+   within the period.
+4. Log resets with an optional note. Resets create permanent
+   `SemesterReset` records and never alter or delete shifts.
+5. Export a CSV containing mentor totals and reset history.
+
+The Mentors page also provides a semester filter for full timesheets. The
+currently clocked-in panel shows each mentor's completed hours in the active
+semester.
+
 ## Admin PIN
 
 The initial PIN comes from `ADMIN_PIN` when the kiosk database is seeded. The application stores a salted hash in the `AppSetting` record with ID `"admin"`. After signing in, an administrator can change it under Settings → Change PIN.
@@ -192,6 +217,17 @@ The initial PIN comes from `ADMIN_PIN` when the kiosk database is seeded. The ap
 - If it reports `os4_db: "error"`, verify `OS4_DATABASE_URL` and ensure the separate OS4 database or local container is running.
 - If Prisma client types are missing, rerun `npm run prisma:generate:all`.
 - If email delivery fails, verify the Resend API key, verified sender, and test-recipient overrides.
+- If Docker reports `bind: address already in use` for port 3000, find and stop
+  the existing process before restarting Compose:
+
+  ```bash
+  lsof -nP -iTCP:3000 -sTCP:LISTEN
+  kill <PID>
+  docker compose up
+  ```
+
+- If the Semesters page reports a database error, confirm that
+  `20260731120000_add_semester_tracking` appears in `npx prisma migrate status`.
 - A Next.js warning about `middleware` being deprecated is currently expected and does not prevent the app from running.
 
 ## Contact
